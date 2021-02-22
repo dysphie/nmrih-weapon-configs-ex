@@ -492,13 +492,6 @@
 				"linux" "@_ZN16CNMRiH_MeleeBase19ShouldMeleePushbackEv"
 				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\xC7\x45\xFC\x00\x00\x00\x00\xE8\x2A\x2A\x2A\x2A"
 			}
-
-			""
-			{
-				"library" "server"
-				"linux"	"" // TODO!!!!!!!!!!!!!!!!!!
-				"windows"	"\x55\x8B\xEC\x80\x7D\x0C\x00\xA1\x2A\x2A\x2A\x2A"
-			}
 		}
 
 		"Functions"
