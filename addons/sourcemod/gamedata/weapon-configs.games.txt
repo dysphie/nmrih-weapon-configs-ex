@@ -1,0 +1,923 @@
+"Games"
+{
+	"#default"
+	{
+		"Keys"
+		{
+			// Jumps to our code cave
+			//
+			//      ; set eax to our code cave address
+			//      mov eax, 0xFFFFFFFF
+			//      jmp eax ; jump to the code cave!
+			//      nop
+			//      nop
+			//      nop
+			//
+			"FlareGunRadiusTrampoline" "\xB8\xFF\xFF\xFF\xFF\xFF\xE0\x90\x90\x90"
+
+			// Loads a raw hex value into the FPU
+			//
+			//      ; Load our float value from the stack
+			//      mov eax, 0xFFFFFFFF
+			//      push eax
+			//      fld dword [esp]
+			//      pop eax
+			//
+			//      ; Op-codes from original function we stomped over
+			//      lea     eax, [ebp-54h]
+			//      push    eax
+			//
+			//      ; Set eax to our return address and jump to it
+			//      mov eax, 0xFFFFFFFF
+			//      jmp eax
+			//
+			"FlareGunRadiusCodeCave" "\xB8\xFF\xFF\xFF\xFF\x50\xD9\x04\x24\x58\x8D\x45\xAC\x50\xB8\xFF\xFF\xFF\xFF\xFF\xE0"
+		}
+
+		"Addresses"
+		{
+			// Linux only: Address of flare gun's float blast radius
+			"CNMRiHFlareProjectile::FlyThink@BlastRadius"
+			{
+				"signature" "CNMRiHFlareProjectile::FlyThink"
+				"offset" "674"
+			}
+
+			// Windows only: Address of unused code that is large enough to
+			//               fit a code cave for changing flare gun's radius
+			"CodeCaveForFlareGunRadius"
+			{
+				"signature" "CodeCaveForFlareGunRadius"
+				"offset" "1"
+			}
+
+			// Windows only: Address to place trampoline to code cave.
+			"TrampolineForFlareGunRadius"
+			{
+				"signature" "CNMRiHFlareProjectile::FlyThink"
+				"windows"
+				{
+					"offset" "608"
+				}
+			}
+		}
+
+		"Offsets"
+		{
+			// Offset into FlareGunRadiusTrampoline of code cave address jump
+			"FlareGunRadiusTrampoline.CodeCaveAddress"
+			{
+				"windows" "1"
+			}
+
+			// Offset into FlareGunRadiusCodeCave that float value is stored
+			"FlareGunRadiusCodeCave.Radius"
+			{
+				"windows" "1"
+			}
+
+			// Offset into FlareGunRadiusCodeCave that return address is stored
+			"FlareGunRadiusCodeCave.ReturnAddress"
+			{
+				"windows" "15"
+			}
+
+			"IsLinux"
+			{
+				"windows" "0"
+				"linux" "1"
+			}
+
+			"CNMRiH_BaseBow::m_flArrowReleaseTime"
+			{
+				// float - Game time that bow's arrow can be released
+				"windows" "1492"
+				"linux" "1512"
+			}
+
+			"CGameTrace::hitgroup"
+			{
+				// int
+				"windows" "68"
+				"linux" "68"
+			}
+
+			"CTakeDamageInfo::m_hAttacker"
+			{
+				// EHANDLE
+				"windows" "40"
+				"linux" "40"
+			}
+
+			"CTakeDamageInfo::m_hInflictor"
+			{
+				// EHANDLE
+				"windows" "36"
+				"linux" "36"
+			}
+
+			"CTakeDamageInfo::m_flDamage"
+			{
+				// float
+				"windows" "48"
+				"linux" "48"
+			}
+
+			"CTakeDamageInfo::m_bitsDamageType"
+			{
+				// int
+				"windows" "60"
+				"linux" "60"
+			}
+
+			// ================================================================
+			// CBaseEntity
+
+			"CBaseEntity::TraceAttack"
+			{
+				// void (const CTakeDamageInfo &, const Vector &, CGameTrace *, CDmgAccumulator *)
+				"windows" "60"
+				"linux" "61"
+			}
+
+			"CBaseEntity::IsNPC"
+			{
+				// bool ()
+				"windows" "71"
+				"linux" "72"
+			}
+
+			"CBaseEntity::IsBaseCombatWeapon"
+			{
+				// bool ()
+				"windows" "87"
+				"linux" "88"
+			}
+
+			// ================================================================
+			// Medical Weapons
+
+			"CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal"
+			{
+				// void ()
+				"windows" "437"
+				"linux" "438"
+			}
+
+			"CNMRiH_BaseMedicalItem::ShouldUseMedicalItem"
+			{
+				// bool ()
+				"windows" "438"
+				"linux" "439"
+			}
+
+			// ================================================================
+			// Grenade
+
+			"CBaseGrenade::Detonate"
+			{
+				// void ()
+				"windows" "219"
+				"linux" "220"
+			}
+
+			"CBaseSDKGrenade::EmitGrenade"
+			{
+				//void (Vector,QAngle,Vector,Vector,CBasePlayer *,CWeaponSDKBase *)
+				"linux" "442"
+				"windows" "441"
+			}
+
+			// ================================================================
+			// Weapons
+
+			"CBaseCombatWeapon::HasAnyAmmo"
+			{
+				// bool ()
+				"windows" "244"
+				"linux" "245"
+			}
+
+			"CBaseCombatWeapon::PrimaryAttack"
+			{
+				// void ()
+				"windows" "275"
+				"linux" "276"
+			}
+
+			"CBaseCombatWeapon::SecondaryAttack"
+			{
+				// void ()
+				"windows" "276"
+				"linux" "277"
+			}
+
+			"CBaseCombatWeapon::GetMaxClip1"
+			{
+				// int () const
+				"windows" "314"
+				"linux" "315"
+			}
+
+			"CBaseCombatWeapon::GetWeight"
+			{
+				// int () const
+				"windows" "318"
+				"linux" "319"
+			}
+
+			"CBaseCombatWeapon::AllowsAutoSwitchTo"
+			{
+				// bool () const
+				"windows" "319"
+				"linux" "320"
+			}
+
+			"CBaseCombatWeapon::GetShootSound"
+			{
+				// char * (WeaponSound_t)
+				"windows" "327"
+				"linux" "328"
+			}
+
+			"CBaseCombatWeapon::GetWeaponID"
+			{
+				// int () const
+				"windows" "370"
+				"linux" "371"
+			}
+
+			"CNMRiH_WeaponBase::GetShoveDamage"
+			{
+				// int (const CGameTrace &)
+				"windows" "394"
+				"linux" "395"
+			}
+
+			"CNMRiH_MeleeBase::GetThrownDamage"
+			{
+				// int (CGameTrace  const&)
+				"windows" "395"
+				"linux" "396"
+			}
+
+			"CNMRiH_WeaponBase::SetBashActionTime"
+			{
+				// void (float,bool)
+				"windows" "402"
+				"linux" "403"
+			}
+
+			"CNMRiH_WeaponBase::HitEffects"
+			{
+				// void (CGameTrace &)
+				"windows" "406"
+				"linux" "407"
+			}
+
+			"CNMRiH_WeaponBase::ToggleIronsights"
+			{
+				// void ()
+				"windows" "408"
+				"linux" "409"
+			}
+
+			"CNMRiH_WeaponBase::TurnOnIronsights"
+			{
+				// void ()
+				"windows" "409"
+				"linux" "410"
+			}
+
+			"CNMRiH_WeaponBase::TurnOffIronsights"
+			{
+				// void ()
+				"windows" "410"
+				"linux" "411"
+			}
+
+			"CNMRiH_WeaponBase::ToggleFlashlight"
+			{
+				// void ()
+				"windows" "417"
+				"linux" "418"
+			}
+
+			"CNMRiH_WeaponBase::IsFlashlightOn"
+			{
+				// bool ()
+				"windows" "418"
+				"linux" "419"
+			}
+
+			"CNMRiH_WeaponBase::IsFlashlightAllowed"
+			{
+				// bool ()
+				"windows" "419"
+				"linux" "420"
+			}
+
+			"CNMRiH_WeaponBase::StartShove"
+			{
+				// void ()
+				"windows" "420"
+				"linux" "421"
+			}
+
+			"CNMRiH_WeaponBase::DoShove"
+			{
+				// void ()
+				"windows" "422"
+				"linux" "423"
+			}
+
+			"CNMRiH_WeaponBase::CheckAmmo"
+			{
+				"windows" "423"
+				"linux" "424"
+			}
+
+			"CNMRiH_WeaponBase::GetExtraShoveDelay"
+			{
+				// float ()
+				"windows" "434"
+				"linux" "435"
+			}
+
+			"CNMRiH_MeleeBase::QuickAttack"
+			{
+				// void ()
+				"windows" "437"
+				"linux" "438"
+			}
+
+			"CNMRiH_MeleeBase::DoMeleeSwing"
+			{
+				// void (int)
+				"windows" "438"
+				"linux" "439"
+			}
+
+			"CNMRiH_MeleeBase::ChargeBash"
+			{
+				// void ()
+				"windows" "439"
+				"linux" "440"
+			}
+
+			"CNMRiH_MeleeBase::FinishBash"
+			{
+				// void (bool)
+				"windows" "440"
+				"linux" "441"
+			}
+
+			"CNMRiH_MeleeBase::GetMeleeDamage"
+			{
+				// int (CBaseEntity *, int)
+				"windows" "443"
+				"linux" "444"
+			}
+
+			"CNMRiH_BaseTool::EndSecondary"
+			{
+				// void
+				"windows" "449"
+				"linux" "450"
+			}
+
+			"CNMRiH_BaseTool::BeginSecondary"
+			{
+				// void (CNMRiH_Trigger_ProgressWeapon *)
+				"windows" "450"
+				"linux" "451"
+			}
+
+			// ================================================================
+			// Player
+
+			"CNMRiH_Player::Weapon_Drop"
+			{
+				// void (CBaseCombatWeapon *,Vector  const*,Vector  const*)
+				"windows" "266"
+				"linux" "267"
+			}
+
+			"CNMRiH_Player::BumpWeapon"
+			{
+				// bool (CBaseCombatWeapon *, bool)
+				"windows" "410"
+				"linux" "411"
+			}
+
+			"CNMRiH_Player::HasFlashlight"
+			{
+				// bool ()
+				"windows" "497"
+				"linux" "498"
+			}
+
+			// ================================================================
+			// GameRules
+
+			"CMultiplayRules::CanHavePlayerItem"
+			{
+				// bool (CBasePlayer *,CBaseCombatWeapon *)
+				"windows" "86"
+				"linux" "87"
+			}
+		}
+
+		"Signatures"
+		{
+			"CodeCaveForFlareGunRadius"
+			{
+				// Looks for alignment bytes after a function.
+				"library" "server"
+				"windows" "\xC3\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC"
+			}
+
+			"CNMRiHFlareProjectile::FlyThink"
+			{
+				"library" "server"
+				"linux" "@_ZN21CNMRiHFlareProjectile8FlyThinkEv.part.27"
+				"windows" "\x53\x8B\xDC\x83\xEC*\x83\xE4*\x83\xC4*\x55\x8B\x6B*****\x8B\xEC*****\x81\xEC*****************\x56\x57\x8B\xF9*******************\xC1\xE8*\xA8\x01"
+			}
+
+			"CNMRiH_Player::Weapon_PickedUp"
+			{
+				// void (CBaseCombatWeapon *)
+				"library" "server"
+				"linux" "@_ZN13CNMRiH_Player15Weapon_PickedUpEP17CBaseCombatWeapon"
+				"windows" "\x55\x8B\xEC\x81\xEC****\x53\x8B\x5D\x08\x57\x8B\xF9\x85\xDB**************\x85\xC0\x0F\x45\xC8*************\x51*****\x83\xC4*\x85\xC0**\x8B\xCF*****\x6A\x00\x6A\x01\x8B\xC8\x8B\x10"
+			}
+
+			"CNMRiH_WeaponBase::AllowsSuicide"
+			{
+				// bool ()
+				"library" "server"
+				"linux" "@_ZNK17CNMRiH_WeaponBase13AllowsSuicideEv"
+				"windows" "\xE8****\x8A\x80\x50\x0A\x00\x00\xC3"
+			}
+
+			"CNMRiH_WeaponBase::IsSkillshotModeAvailable"
+			{
+				// bool ()
+				"library" "server"
+				"linux" "@_ZN17CNMRiH_WeaponBase24IsSkillshotModeAvailableEv"
+				// TODO: It's a little more complicated for Windows.
+				//"windows" ""
+			}
+
+			"CNMRiH_WeaponBase::Unload"
+			{
+				// void ()
+				"library" "server"
+				"linux" "@_ZN17CNMRiH_WeaponBase6UnloadEv"
+				"windows" "\x55\x8B\xEC\x51\x56\x57\x8B\xF9\xE8****\x8B\xF0\x85\xF6******\x8B\x16\x8B\xCE\x8B\x92****\xFF\xD2\x84\xC0******\x53\x6A\x00\x68****\x68****\x6A\x00\x56\xE8****\x8B\xD8\x83\xC4*\x85\xDB"
+			}
+
+			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
+			{
+				"library" "server"
+				"linux" "@_ZN16CNMRiH_MeleeBase22DrainMeleeSwingStaminaEv"
+				"windows" "\x56\x57\x8B\xF1\xE8****\x8B\xF8\x85\xFF**\x8B\xCE\xE8********************\x0F\x2F\xCA**********\x0F\x2F\xC2**\xA1*********\x0F\x2F\xD0**\x0F\x28\xC2\xF3\x0F\x59\xC1\x0F\x28\xC8"
+			}
+
+			"CNMRiH_MeleeBase::ShouldMeleePushback"
+			{
+				// bool ()
+				"library" "server"
+				"linux" "@_ZN16CNMRiH_MeleeBase19ShouldMeleePushbackEv"
+				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\xC7******\xE8****\x8B*****\x83\xF8\x01**\xF3\x0F******\x0F******\xA1******\xA1******\x83\xF8\x02**\xF3\x0F******\x0F******\xA1******\xA1****\xF3****\xF3****\x8B*****\x83\xEC*\xD9\xE8"
+			}
+		}
+
+		"Functions"
+		{
+			//
+			// Virtual DHooks
+			//
+
+			"CNMRiH_BaseMedicalItem::ShouldUseMedicalItem"
+			{
+				"offset" "CNMRiH_BaseMedicalItem::ShouldUseMedicalItem"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "bool"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CBaseEntity::TraceAttack"
+			{
+				"offset" "CBaseEntity::TraceAttack"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+					"damageInfo"
+					{
+						"type" "objectptr" // const CTakeDamageInfo &
+						"flags" "byref"
+					}
+					"direction"
+					{
+						"type" "objectptr" // const Vector &
+						"flags" "byref"
+					}
+					"trace"
+					{
+						"type" "objectptr" // trace_t *
+					}
+					"accumulator"
+					{
+						"type" "objectptr" // CDmgAccumulator *
+					}
+				}
+			}
+
+			"CBaseCombatWeapon::GetMaxClip1"
+			{
+				"offset" "CBaseCombatWeapon::GetMaxClip1"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "int"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CBaseCombatWeapon::GetWeight"
+			{
+				"offset" "CBaseCombatWeapon::GetWeight"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "int"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_WeaponBase::GetShoveDamage"
+			{
+				"offset" "CNMRiH_WeaponBase::GetShoveDamage"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "int"
+				"this" "entity"
+				"arguments"
+				{
+					"trace"
+					{
+						"type" "objectptr"	// CGameTrace  const&
+						"flags" "byref"
+					}
+				}
+			}
+
+			"CNMRiH_MeleeBase::GetShoveDamage"
+			{
+				"offset" "CNMRiH_MeleeBase::GetShoveDamage"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "int"
+				"this" "entity"
+				"arguments"
+				{
+					"trace"
+					{
+						"type" "objectptr"	// CGameTrace  const&
+						"flags" "byref"
+					}
+				}
+			}
+
+			"CNMRiH_MeleeBase::GetThrownDamage"
+			{
+				"offset" "CNMRiH_MeleeBase::GetThrownDamage"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "int"
+				"this" "entity"
+				"arguments"
+				{
+					"trace"
+					{
+						"type" "objectptr"	// CGameTrace  const&
+						"flags" "byref"
+					}
+				}
+			}
+
+			"CNMRiH_WeaponBase::SetBashActionTime"
+			{
+				"offset" "CNMRiH_WeaponBase::SetBashActionTime"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+					"time"
+					{
+						"type" "float"
+					}
+					"unknown"
+					{
+						"type" "bool"
+					}
+				}
+			}
+
+			"CNMRiH_WeaponBase::DoShove"
+			{
+				"offset" "CNMRiH_WeaponBase::DoShove"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_WeaponBase::CheckAmmo"
+			{
+				"offset" "CNMRiH_WeaponBase::CheckAmmo"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_MeleeBase::QuickAttack"
+			{
+				"offset" "CNMRiH_MeleeBase::QuickAttack"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_MeleeBase::DoMeleeSwing"
+			{
+				"offset" "CNMRiH_MeleeBase::DoMeleeSwing"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+					"unknown"
+					{
+						"type" "int"
+					}
+				}
+			}
+
+			"CNMRiH_MeleeBase::ChargeBash"
+			{
+				"offset" "CNMRiH_MeleeBase::ChargeBash"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_MeleeBase::FinishBash"
+			{
+				"offset" "CNMRiH_MeleeBase::FinishBash"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+					"unknown"
+					{
+						"type" "bool"
+					}
+				}
+			}
+
+			"CNMRiH_MeleeBase::GetMeleeDamage"
+			{
+				"offset" "CNMRiH_MeleeBase::GetMeleeDamage"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "int"
+				"this" "entity"
+				"arguments"
+				{
+					"target"
+					{
+						"type" "cbaseentity"
+					}
+					"hitgroup"
+					{
+						"type" "int"
+					}
+				}
+			}
+
+			"CNMRiH_WeaponBase::StartShove"
+			{
+				"offset" "CNMRiH_WeaponBase::StartShove"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CBaseCombatWeapon::PrimaryAttack"
+			{
+				"offset" "CBaseCombatWeapon::PrimaryAttack"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CBaseCombatWeapon::SecondaryAttack"
+			{
+				"offset" "CBaseCombatWeapon::SecondaryAttack"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CBaseSDKGrenade::EmitGrenade"
+			{
+				"offset" "CBaseSDKGrenade::EmitGrenade"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+					"source"
+					{
+						"type" "object" // Vector
+						"size" "12"
+					}
+					"angles"
+					{
+						"type" "object" // QAngle
+						"size" "12"
+					}
+					"velocity"
+					{
+						"type" "object" // Vector
+						"size" "12"
+					}
+					"angularImpulse"
+					{
+						"type" "object" // AngularImpulse
+						"size" "12"
+					}
+					"player"
+					{
+						"type" "cbaseentity" // CBasePlayer *
+					}
+					"unknown"
+					{
+						"type" "cbaseentity" // CWeaponSDKBase *
+					}
+				}
+			}
+
+			"CNMRiH_WeaponBase::TurnOnIronsights"
+			{
+				"offset" "CNMRiH_WeaponBase::TurnOnIronsights"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_WeaponBase::TurnOffIronsights"
+			{
+				"offset" "CNMRiH_WeaponBase::TurnOffIronsights"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_WeaponBase::ToggleFlashlight"
+			{
+				"offset" "CNMRiH_WeaponBase::ToggleFlashlight"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal"
+			{
+				"offset" "CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal"
+				"callconv" "thiscall"
+				"hooktype" "entity"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			//
+			// Dynamic detours
+			//
+
+			"CNMRiH_WeaponBase::AllowsSuicide"
+			{
+				"signature" "CNMRiH_WeaponBase::AllowsSuicide"
+				"callconv" "thiscall"
+				"return" "bool"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_WeaponBase::IsSkillshotModeAvailable"
+			{
+				"signature" "CNMRiH_WeaponBase::IsSkillshotModeAvailable"
+				"callconv" "thiscall"
+				"return" "bool"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_WeaponBase::Unload"
+			{
+				"signature" "CNMRiH_WeaponBase::Unload"
+				"callconv" "thiscall"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
+			{
+				"signature" "CNMRiH_MeleeBase::DrainMeleeSwingStamina"
+				"callconv" "thiscall"
+				"return" "void"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+
+			"CNMRiH_MeleeBase::ShouldMeleePushback"
+			{
+				"signature" "CNMRiH_MeleeBase::ShouldMeleePushback"
+				"callconv" "thiscall"
+				"return" "bool"
+				"this" "entity"
+				"arguments"
+				{
+				}
+			}
+		}
+	}
+}
