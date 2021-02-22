@@ -10,11 +10,11 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.0.5"
+#define WEAPON_CONFIGS_VERSION "1.0.6"
 
 public Plugin myinfo =
 {
-    name = "[NMRiH] Weapon Configs",
+    name = "[NMRiH] Weapon Configs (Dysphie's fork)",
     author = "Ryan.",
     description = "Customize weapon speeds and behavior.",
     version = WEAPON_CONFIGS_VERSION,
@@ -258,7 +258,7 @@ Handle g_dhook_bow_shoot_speed;                 // Change animation speed of bow
 Handle g_dhook_weapon_capacity;                 // Change amount of ammo the weapon can hold.
 Handle g_dhook_weapon_maglite_speed;            // Change animation speed of maglite when used with another weapon.
 Handle g_dhook_weapon_pre_maglite_toggle;       // Store state of player's flashlight immediately before it is toggled.
-Handle g_dhook_weapon_shove_cooldown;           // Change delay between shoves.
+// Handle g_dhook_weapon_shove_cooldown;           // Change delay between shoves.
 Handle g_dhook_weapon_shove_cost;               // Change cost of shove.
 Handle g_dhook_weapon_shove_damage;             // Change weapon shove damage.
 Handle g_dhook_weapon_shove_speed;              // Change animation speed of shove.
@@ -952,31 +952,31 @@ public MRESReturn DHook_BowShootSpeed(int bow)
  * Native signature:
  * void CNMRiH_WeaponBase::SetBashActionTime(float, bool)
  */
-public MRESReturn DHook_ChangeWeaponShoveCooldown(int weapon, Handle params)
-{
-    MRESReturn result = MRES_Ignored;
+// public MRESReturn DHook_ChangeWeaponShoveCooldown(int weapon, Handle params)
+// {
+//     MRESReturn result = MRES_Ignored;
 
-    const int PARAM_COOLDOWN = 1;
+//     const int PARAM_COOLDOWN = 1;
 
-    // Change shove cooldown.
-    if (g_cvar_weapon_configs_enabled.BoolValue &&
-        IsValidEdict(weapon) &&
-        IsBaseCombatWeapon(weapon))
-    {
-        int id = GetWeaponID(weapon);
-        if (id >= 0 && id < WEAPON_MAX)
-        {
-            float cooldown = g_weapon_options[id][WEAPON_SHOVE_COOLDOWN];
-            if (cooldown >= 0.0)
-            {
-                DHookSetParam(params, PARAM_COOLDOWN, cooldown);
-                result = MRES_ChangedHandled;
-            }
-        }
-    }
+//     // Change shove cooldown.
+//     if (g_cvar_weapon_configs_enabled.BoolValue &&
+//         IsValidEdict(weapon) &&
+//         IsBaseCombatWeapon(weapon))
+//     {
+//         int id = GetWeaponID(weapon);
+//         if (id >= 0 && id < WEAPON_MAX)
+//         {
+//             float cooldown = g_weapon_options[id][WEAPON_SHOVE_COOLDOWN];
+//             if (cooldown >= 0.0)
+//             {
+//                 DHookSetParam(params, PARAM_COOLDOWN, cooldown);
+//                 result = MRES_ChangedHandled;
+//             }
+//         }
+//     }
 
-    return result;
-}
+//     return result;
+// }
 
 /**
  * Store the player's current stamina amount.
@@ -1998,7 +1998,7 @@ void HandleNewEntity(int entity, const char[] classname)
         DHookEntity(g_dhook_weapon_thrown_damage, DHOOK_POST, entity, N, DHook_WeaponThrowDamage);
 
         DHookEntity(g_dhook_weapon_capacity, DHOOK_POST, entity, N, DHook_ChangeWeaponCapacity);
-        DHookEntity(g_dhook_weapon_shove_cooldown, DHOOK_PRE, entity, N, DHook_ChangeWeaponShoveCooldown);
+        // DHookEntity(g_dhook_weapon_shove_cooldown, DHOOK_PRE, entity, N, DHook_ChangeWeaponShoveCooldown);
         DHookEntity(g_dhook_weapon_shove_cost, DHOOK_PRE, entity, N, DHook_ChangeWeaponShoveCostPre);
         DHookEntity(g_dhook_weapon_shove_cost, DHOOK_POST, entity, N, DHook_ChangeWeaponShoveCostPost);
         DHookEntity(g_dhook_weapon_shove_speed, DHOOK_POST, entity, N, DHook_WeaponShoveSpeed);
@@ -2309,7 +2309,7 @@ void LoadDHooks(Handle gameconf)
     g_dhook_weapon_shove_speed = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::StartShove");
 
     // Change delay between shoves.
-    g_dhook_weapon_shove_cooldown = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::SetBashActionTime");
+    // g_dhook_weapon_shove_cooldown = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::SetBashActionTime");
 
     // Change stamina cost of weapon shoves.
     g_dhook_weapon_shove_cost = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::DoShove");
@@ -2565,7 +2565,7 @@ void LoadManyBytesFromAddress(Address address, char[] buffer, int byte_count)
 {
     for (int i = 0; i < byte_count; ++i)
     {
-        buffer[i] = LoadFromAddress(OffsetAddress(address, i), NumberType_Int8);
+        buffer[i] = view_as<char>(LoadFromAddress(OffsetAddress(address, i), NumberType_Int8));
     }
 }
 

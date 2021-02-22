@@ -88,6 +88,7 @@
 				"linux" "1"
 			}
 
+			// FIXME: Game now uses CNMRiH_BaseBow::_stretchStartTime which acts differently
 			"CNMRiH_BaseBow::m_flArrowReleaseTime"
 			{
 				// float - Game time that bow's arrow can be released
@@ -160,15 +161,15 @@
 			"CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal"
 			{
 				// void ()
-				"windows" "437"
-				"linux" "438"
+				"windows" "433"
+				"linux" "434"
 			}
 
 			"CNMRiH_BaseMedicalItem::ShouldUseMedicalItem"
 			{
 				// bool ()
-				"windows" "438"
-				"linux" "439"
+				"windows" "434"
+				"linux" "435"
 			}
 
 			// ================================================================
@@ -184,8 +185,8 @@
 			"CBaseSDKGrenade::EmitGrenade"
 			{
 				//void (Vector,QAngle,Vector,Vector,CBasePlayer *,CWeaponSDKBase *)
-				"linux" "442"
-				"windows" "441"
+				"windows" "437"
+				"linux" "438"
 			}
 
 			// ================================================================
@@ -261,136 +262,136 @@
 				"linux" "396"
 			}
 
-			"CNMRiH_WeaponBase::SetBashActionTime"
-			{
-				// void (float,bool)
-				"windows" "402"
-				"linux" "403"
-			}
+			// "CNMRiH_WeaponBase::SetBashActionTime"
+			// {
+			// 	// void (float,bool)
+			// 	"windows" "398"
+			// 	"linux" "399"
+			// }
 
 			"CNMRiH_WeaponBase::HitEffects"
 			{
 				// void (CGameTrace &)
-				"windows" "406"
-				"linux" "407"
+				"windows" "402"
+				"linux" "403"
 			}
 
 			"CNMRiH_WeaponBase::ToggleIronsights"
 			{
 				// void ()
-				"windows" "408"
-				"linux" "409"
+				"windows" "404"
+				"linux" "405"
 			}
 
 			"CNMRiH_WeaponBase::TurnOnIronsights"
 			{
 				// void ()
-				"windows" "409"
-				"linux" "410"
+				"windows" "405"
+				"linux" "406"
 			}
 
 			"CNMRiH_WeaponBase::TurnOffIronsights"
 			{
 				// void ()
-				"windows" "410"
-				"linux" "411"
+				"windows" "406"
+				"linux" "407"
 			}
 
 			"CNMRiH_WeaponBase::ToggleFlashlight"
 			{
 				// void ()
-				"windows" "417"
-				"linux" "418"
+				"windows" "413"
+				"linux" "414"
 			}
 
 			"CNMRiH_WeaponBase::IsFlashlightOn"
 			{
 				// bool ()
-				"windows" "418"
-				"linux" "419"
+				"windows" "414"
+				"linux" "415"
 			}
 
 			"CNMRiH_WeaponBase::IsFlashlightAllowed"
 			{
 				// bool ()
-				"windows" "419"
-				"linux" "420"
+				"windows" "415"
+				"linux" "416"
 			}
 
 			"CNMRiH_WeaponBase::StartShove"
 			{
 				// void ()
-				"windows" "420"
-				"linux" "421"
+				"windows" "416"
+				"linux" "417"
 			}
 
 			"CNMRiH_WeaponBase::DoShove"
 			{
 				// void ()
-				"windows" "422"
-				"linux" "423"
+				"windows" "418"
+				"linux" "419"
 			}
 
 			"CNMRiH_WeaponBase::CheckAmmo"
 			{
-				"windows" "423"
-				"linux" "424"
+				"windows" "419"
+				"linux" "420"
 			}
 
 			"CNMRiH_WeaponBase::GetExtraShoveDelay"
 			{
 				// float ()
-				"windows" "434"
-				"linux" "435"
+				"windows" "430"
+				"linux" "431"
 			}
 
 			"CNMRiH_MeleeBase::QuickAttack"
 			{
 				// void ()
-				"windows" "437"
-				"linux" "438"
+				"windows" "433"
+				"linux" "434"
 			}
 
 			"CNMRiH_MeleeBase::DoMeleeSwing"
 			{
 				// void (int)
-				"windows" "438"
-				"linux" "439"
+				"windows" "434"
+				"linux" "435"
 			}
 
 			"CNMRiH_MeleeBase::ChargeBash"
 			{
 				// void ()
-				"windows" "439"
-				"linux" "440"
+				"windows" "435"
+				"linux" "436"
 			}
 
 			"CNMRiH_MeleeBase::FinishBash"
 			{
 				// void (bool)
-				"windows" "440"
-				"linux" "441"
+				"windows" "436"
+				"linux" "437"
 			}
 
 			"CNMRiH_MeleeBase::GetMeleeDamage"
 			{
 				// int (CBaseEntity *, int)
-				"windows" "443"
-				"linux" "444"
+				"windows" "439"
+				"linux" "440"
 			}
 
 			"CNMRiH_BaseTool::EndSecondary"
 			{
 				// void
-				"windows" "449"
-				"linux" "450"
+				"windows" "445"
+				"linux" "446"
 			}
 
 			"CNMRiH_BaseTool::BeginSecondary"
 			{
 				// void (CNMRiH_Trigger_ProgressWeapon *)
-				"windows" "450"
-				"linux" "451"
+				"windows" "446"
+				"linux" "447"
 			}
 
 			// ================================================================
@@ -441,7 +442,7 @@
 			{
 				"library" "server"
 				"linux" "@_ZN21CNMRiHFlareProjectile8FlyThinkEv.part.27"
-				"windows" "\x53\x8B\xDC\x83\xEC*\x83\xE4*\x83\xC4*\x55\x8B\x6B*****\x8B\xEC*****\x81\xEC*****************\x56\x57\x8B\xF9*******************\xC1\xE8*\xA8\x01"
+				"windows" "\x53\x8B\xDC\x83\xEC\x08\x83\xE4\xF0\x83\xC4\x04\x55\x8B\x6B\x04\x89\x6C\x24\x04\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x81\xEC\x28\x03\x00\x00"
 			}
 
 			"CNMRiH_Player::Weapon_PickedUp"
@@ -449,7 +450,7 @@
 				// void (CBaseCombatWeapon *)
 				"library" "server"
 				"linux" "@_ZN13CNMRiH_Player15Weapon_PickedUpEP17CBaseCombatWeapon"
-				"windows" "\x55\x8B\xEC\x81\xEC****\x53\x8B\x5D\x08\x57\x8B\xF9\x85\xDB**************\x85\xC0\x0F\x45\xC8*************\x51*****\x83\xC4*\x85\xC0**\x8B\xCF*****\x6A\x00\x6A\x01\x8B\xC8\x8B\x10"
+				"windows" "\x55\x8B\xEC\x81\xEC\x10\x01\x00\x00\x53\x8B\x5D\x08\x57\x8B\xF9"
 			}
 
 			"CNMRiH_WeaponBase::AllowsSuicide"
@@ -457,7 +458,7 @@
 				// bool ()
 				"library" "server"
 				"linux" "@_ZNK17CNMRiH_WeaponBase13AllowsSuicideEv"
-				"windows" "\xE8****\x8A\x80\x50\x0A\x00\x00\xC3"
+				"windows" "\xE8\x2A\x2A\x2A\x2A\x8A\x80\x50\x0A\x00\x00"
 			}
 
 			"CNMRiH_WeaponBase::IsSkillshotModeAvailable"
@@ -474,14 +475,14 @@
 				// void ()
 				"library" "server"
 				"linux" "@_ZN17CNMRiH_WeaponBase6UnloadEv"
-				"windows" "\x55\x8B\xEC\x51\x56\x57\x8B\xF9\xE8****\x8B\xF0\x85\xF6******\x8B\x16\x8B\xCE\x8B\x92****\xFF\xD2\x84\xC0******\x53\x6A\x00\x68****\x68****\x6A\x00\x56\xE8****\x8B\xD8\x83\xC4*\x85\xDB"
+				"windows" "\x55\x8B\xEC\x51\x56\x57\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x85\xF6\x0F\x84\x2A\x2A\x2A\x2A\x8B\x16"
 			}
 
 			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
 			{
 				"library" "server"
 				"linux" "@_ZN16CNMRiH_MeleeBase22DrainMeleeSwingStaminaEv"
-				"windows" "\x56\x57\x8B\xF1\xE8****\x8B\xF8\x85\xFF**\x8B\xCE\xE8********************\x0F\x2F\xCA**********\x0F\x2F\xC2**\xA1*********\x0F\x2F\xD0**\x0F\x28\xC2\xF3\x0F\x59\xC1\x0F\x28\xC8"
+				"windows" "\x56\x57\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\xF8\x85\xFF\x74\x2A\x8B\xCE"
 			}
 
 			"CNMRiH_MeleeBase::ShouldMeleePushback"
@@ -489,7 +490,14 @@
 				// bool ()
 				"library" "server"
 				"linux" "@_ZN16CNMRiH_MeleeBase19ShouldMeleePushbackEv"
-				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\xC7******\xE8****\x8B*****\x83\xF8\x01**\xF3\x0F******\x0F******\xA1******\xA1******\x83\xF8\x02**\xF3\x0F******\x0F******\xA1******\xA1****\xF3****\xF3****\x8B*****\x83\xEC*\xD9\xE8"
+				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\xC7\x45\xFC\x00\x00\x00\x00\xE8\x2A\x2A\x2A\x2A"
+			}
+
+			""
+			{
+				"library" "server"
+				"linux"	"" // TODO!!!!!!!!!!!!!!!!!!
+				"windows"	"\x55\x8B\xEC\x80\x7D\x0C\x00\xA1\x2A\x2A\x2A\x2A"
 			}
 		}
 
@@ -616,25 +624,25 @@
 				}
 			}
 
-			"CNMRiH_WeaponBase::SetBashActionTime"
-			{
-				"offset" "CNMRiH_WeaponBase::SetBashActionTime"
-				"callconv" "thiscall"
-				"hooktype" "entity"
-				"return" "void"
-				"this" "entity"
-				"arguments"
-				{
-					"time"
-					{
-						"type" "float"
-					}
-					"unknown"
-					{
-						"type" "bool"
-					}
-				}
-			}
+			// "CNMRiH_WeaponBase::SetBashActionTime"
+			// {
+			// 	"offset" "CNMRiH_WeaponBase::SetBashActionTime"
+			// 	"callconv" "thiscall"
+			// 	"hooktype" "entity"
+			// 	"return" "void"
+			// 	"this" "entity"
+			// 	"arguments"
+			// 	{
+			// 		"time"
+			// 		{
+			// 			"type" "float"
+			// 		}
+			// 		"unknown"
+			// 		{
+			// 			"type" "bool"
+			// 		}
+			// 	}
+			// }
 
 			"CNMRiH_WeaponBase::DoShove"
 			{
