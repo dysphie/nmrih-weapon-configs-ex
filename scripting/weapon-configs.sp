@@ -10,11 +10,11 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.0.6"
+#define WEAPON_CONFIGS_VERSION "1.1.6"
 
 public Plugin myinfo =
 {
-    name = "[NMRiH] Weapon Configs (Dysphie's fork)",
+    name = "[NMRiH] Weapon Configs (Dysphie's Fork)",
     author = "Ryan.",
     description = "Customize weapon speeds and behavior.",
     version = WEAPON_CONFIGS_VERSION,
@@ -70,9 +70,6 @@ static const char ITEM_MAGLITE[] = "item_maglite";
 static const char TOOL_BARRICADE[] = "tool_barricade";
 static const char WEAPON_BOW[] = "bow_deerhunter";
 static const char WEAPON_BARRICADE[] = "tool_barricade";
-
-// Flare gun radius to restore when plugin is unloaded.
-static const float DEFAULT_FLARE_GUN_RADIUS = 32.0;
 
 // Customizable weapon attributes.
 enum eWeaponOption:
@@ -223,16 +220,6 @@ int g_offset_takedamageinfo_damage;
 int g_offset_takedamageinfo_damage_type;
 int g_offset_gametrace_hitgroup;            // Hitgroup member of CGameTrace.
 
-int g_flare_gun_patch_original_trampoline_size;     // Number of valid bytes in g_flare_gun_patch_original_trampoline.
-char g_flare_gun_patch_original_trampoline[256];    // Backup of bytes originally stored at trampoline location.
-
-int g_flare_gun_patch_original_code_cave_size;      // Number of valid bytes in g_flare_gun_patch_original_code_cave.
-char g_flare_gun_patch_original_code_cave[256];     // Backup of bytes originally stored in code cave.
-
-Address g_flare_gun_patch_address;          // Address of float value used as flare's explosion radius.
-Address g_flare_gun_patch_code_cave;        // Windows only: Address of flare-changing code cave.
-Address g_flare_gun_patch_trampoline;       // Windows only: Address of trampoline to code cave.
-
 Handle g_sdkcall_weapon_is_flashlight_on;
 Handle g_sdkcall_player_has_flashlight;
 Handle g_sdkcall_weapon_is_flashlight_allowed;
@@ -268,8 +255,6 @@ Handle g_dhook_grenade_start_throw_speed;       // Change animation speed of gre
 Handle g_dhook_grenade_finish_throw_speed;      // Change animation speed of grenade throw.
 Handle g_dhook_fists_stamina_cost;              // Change stamina cost of fists.
 
-// Stores handles to all of our detours.
-DataPack g_detours;
 
 ConVar g_cvar_weapon_configs_enabled;           // Whether the plugin is active
 
@@ -295,11 +280,9 @@ public void OnPluginStart()
     GetSourcemodVersion();
 
     // Game data is necesary for our DHooks/SDKCalls.
-    Handle gameconf = LoadGameConfigFile("weapon-configs.games");
+    GameData gameconf = new GameData("weapon-configs.games");
     if (!gameconf)
-    {
         SetFailState("Failed to load game data.");
-    }
 
     g_is_linux_server = GameConfGetOffsetOrFail(gameconf, "IsLinux") != 0;
     g_offset_bow_release_time = GameConfGetOffsetOrFail(gameconf, "CNMRiH_BaseBow::m_flArrowReleaseTime");
@@ -309,23 +292,9 @@ public void OnPluginStart()
     g_offset_takedamageinfo_damage_type = GameConfGetOffsetOrFail(gameconf, "CTakeDamageInfo::m_bitsDamageType");
     g_offset_gametrace_hitgroup = GameConfGetOffsetOrFail(gameconf, "CGameTrace::hitgroup");
 
-    const int version_major = 1;
-    const int version_minor = 10;
-    const int version_patch = 0;
-    const int version_build = 6225;
-
-    if (!g_is_linux_server && IsSourcemodNewerThan(version_major, version_minor, version_patch, version_build))
-    {
-        PrintToServer("%s Warning: This version of Sourcemod is newer than %d.%d.%d.%d and may crash when using custom shove cooldowns. If you experience crashes, make sure to install the detours7 addon from the plugin's forum thread.",
-            WEAPON_CONFIGS_TAG, version_major, version_minor, version_patch, version_build);
-    }
-
     LoadSDKCalls(gameconf);
     LoadDHooks(gameconf);
     LoadDetours(gameconf);
-
-    PatchFlareGunRadius(gameconf);
-
     CloseHandle(gameconf);
 
     g_sv_flare_gun_explode_damage = FindConVar("sv_flare_gun_explode_damage");
@@ -351,10 +320,6 @@ public void OnPluginStart()
  */
 public void OnPluginEnd()
 {
-    UnpatchFlareGunRadius();
-
-    UnloadDetours();
-
     // Restore original flare gun damage.
     SetFlareGunDamage(g_default_flare_gun_damage);
 }
@@ -419,31 +384,16 @@ public void OnClientPostAdminCheck(int client)
 }
 
 /**
- * Update the server's flare radius. This requires us to update the
- * patched memory.
- */
-public void ConVar_OnWeaponConfigsEnabledChange(ConVar convar, const char[] old, const char[] now)
-{
-    float flare_radius = DEFAULT_FLARE_GUN_RADIUS;
-    if (convar.BoolValue)
-    {
-        // Lookup flare gun ID and check if radius was overrided
-        int id = GetWeaponIDFromClassname("tool_flare_gun");
-        float custom_radius = g_weapon_options[id][WEAPON_RADIUS];
-        if (custom_radius >= 0.0)
-        {
-            flare_radius = custom_radius;
-        }
-    }
-    SetFlareGunRadius(flare_radius);
-}
-
-/**
  * Parse a new weapon config.
  */
-public void ConVar_OnWeaponConfigChange(ConVar convar, const char[] old, const char[] now)
+void ConVar_OnWeaponConfigChange(ConVar convar, const char[] old, const char[] now)
 {
     LoadWeaponOptions();
+}
+
+void ConVar_OnWeaponConfigsEnabledChange(ConVar convar, const char[] old, const char[] now)
+{
+    // TODO: Restore original flare gun's damage
 }
 
 /**
@@ -452,7 +402,7 @@ public void ConVar_OnWeaponConfigChange(ConVar convar, const char[] old, const c
  * Need to wait 1 frame after the grenade spawns before we can set its
  * values.
  */
-public void OnFrame_ChangeExplosive(DataPack data)
+void OnFrame_ChangeExplosive(DataPack data)
 {
     data.Reset();
 
@@ -497,7 +447,7 @@ public void OnFrame_ChangeExplosive(DataPack data)
  *
  * @param user_id       User ID of player using bow.
  */
-public void OnFrame_BowShootSpeed(int user_id)
+void OnFrame_BowShootSpeed(int user_id)
 {
     int client = GetClientOfUserId(user_id);
 
@@ -583,7 +533,7 @@ public void OnFrame_BowShootSpeed(int user_id)
  * Reapply the weapon's custom playback speed when it switches from idle
  * to the "medical use" sequence.
  */
-public void OnFrame_ChangeMedicalSpeed(DataPack data)
+void OnFrame_ChangeMedicalSpeed(DataPack data)
 {
     data.Reset();
 
@@ -626,7 +576,7 @@ public void OnFrame_ChangeMedicalSpeed(DataPack data)
  * Native signature:
  * bool CNMRiH_BaseMedicalItem::ShouldUseMedicalItem(void) const
  */
-public MRESReturn DHook_ChangeMedicalSpeed(int medicine, Handle return_handle)
+MRESReturn DHook_ChangeMedicalSpeed(int medicine, Handle return_handle)
 {
     int owner = GetEntOwner(medicine);
 
@@ -646,7 +596,7 @@ public MRESReturn DHook_ChangeMedicalSpeed(int medicine, Handle return_handle)
  * Native signature:
  * void CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal(void)
  */
-public MRESReturn DHook_ChangeMedicalHealAmountPre(int medicine)
+MRESReturn DHook_ChangeMedicalHealAmountPre(int medicine)
 {
     int player = GetEntOwner(medicine);
     if (player > 0 && player <= MaxClients && IsClientInGame(player))
@@ -663,7 +613,7 @@ public MRESReturn DHook_ChangeMedicalHealAmountPre(int medicine)
  * Native signature:
  * void CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal(void)
  */
-public MRESReturn DHook_ChangeMedicalHealAmountPost(int medicine)
+MRESReturn DHook_ChangeMedicalHealAmountPost(int medicine)
 {
     int player = GetEntOwner(medicine);
     if (g_cvar_weapon_configs_enabled.BoolValue &&
@@ -699,7 +649,7 @@ public MRESReturn DHook_ChangeMedicalHealAmountPost(int medicine)
  * Native signature:
  * void CBaseEntity::TraceAttack(const CTakeDamageInfo &, const Vector &, CGameTrace *, CDmgAccumulator *)
  */
-public MRESReturn DHook_ChangeFirearmDamage(int victim, Handle params)
+MRESReturn DHook_ChangeFirearmDamage(int victim, Handle params)
 {
     const int PARAM_TAKEDAMAGEINFO = 1;
     int inflictor = DHookGetParamObjectPtrVar(params, PARAM_TAKEDAMAGEINFO,
@@ -751,7 +701,7 @@ public MRESReturn DHook_ChangeFirearmDamage(int victim, Handle params)
  * Native signature:
  * int CBaseCombatWeapon::GetWeight() const
  */
-public MRESReturn DHook_ChangeWeaponWeight(int weapon, Handle return_handle)
+MRESReturn DHook_ChangeWeaponWeight(int weapon, Handle return_handle)
 {
     MRESReturn result = MRES_Ignored;
 
@@ -778,7 +728,7 @@ public MRESReturn DHook_ChangeWeaponWeight(int weapon, Handle return_handle)
  * Native signature:
  * int CBaseCombatWeapon::GetMaxClip1() const
  */
-public MRESReturn DHook_ChangeWeaponCapacity(int weapon, Handle return_handle)
+MRESReturn DHook_ChangeWeaponCapacity(int weapon, Handle return_handle)
 {
     MRESReturn result;
 
@@ -805,7 +755,7 @@ public MRESReturn DHook_ChangeWeaponCapacity(int weapon, Handle return_handle)
  * Native signature:
  * int CNMRiH_MeleeBase::GetMeleeDamage(CBaseEntity *, int)
  */
-public MRESReturn DHook_MeleeDamage(int melee, Handle return_handle, Handle params)
+MRESReturn DHook_MeleeDamage(int melee, Handle return_handle, Handle params)
 {
     MRESReturn result = MRES_Ignored;
     
@@ -829,7 +779,7 @@ public MRESReturn DHook_MeleeDamage(int melee, Handle return_handle, Handle para
  * Native signature:
  * int CNMRiH_MeleeBase::GetShoveDamage(const CGameTrace &)
  */
-public MRESReturn DHook_ShoveDamage(int melee, Handle return_handle, Handle params)
+MRESReturn DHook_ShoveDamage(int melee, Handle return_handle, Handle params)
 {
     const int PARAM_GAMETRACE = 1;
     return ChangeDamageUsingGameTrace(melee, return_handle, params,
@@ -842,7 +792,7 @@ public MRESReturn DHook_ShoveDamage(int melee, Handle return_handle, Handle para
  * Native signature:
  * int CNMRiH_WeaponBase::GetThrownDamage(const CGameTrace &)
  */
-public MRESReturn DHook_WeaponThrowDamage(int weapon, Handle return_handle, Handle params)
+MRESReturn DHook_WeaponThrowDamage(int weapon, Handle return_handle, Handle params)
 {
     const int PARAM_GAMETRACE = 1;
     return ChangeDamageUsingGameTrace(weapon, return_handle, params,
@@ -855,7 +805,7 @@ public MRESReturn DHook_WeaponThrowDamage(int weapon, Handle return_handle, Hand
  * Native signature:
  * void CNMRiH_MeleeBase::QuickAttack()
  */
-public MRESReturn DHook_MeleeQuickSpeed(int weapon)
+MRESReturn DHook_MeleeQuickSpeed(int weapon)
 {
     ChangeWeaponSpeed(weapon, WEAPON_QUICK_SPEED, WEAPON_QUICK_DELAY);
     return MRES_Ignored;
@@ -867,7 +817,7 @@ public MRESReturn DHook_MeleeQuickSpeed(int weapon)
  * Native signature:
  * void CNMRiH_MeleeBase::ChargeBash()
  */
-public MRESReturn DHook_MeleeChargeSpeed(int weapon)
+MRESReturn DHook_MeleeChargeSpeed(int weapon)
 {
     ChangeWeaponSpeed(weapon, WEAPON_CHARGE_SPEED, WEAPON_CHARGE_DELAY);
     return MRES_Ignored;
@@ -879,7 +829,7 @@ public MRESReturn DHook_MeleeChargeSpeed(int weapon)
  * Native signature:
  * void CNMRiH_MeleeBase::FinishBash(bool)
  */
-public MRESReturn DHook_MeleeChargeReleaseSpeed(int weapon, Handle params)
+MRESReturn DHook_MeleeChargeReleaseSpeed(int weapon)
 {
     ChangeWeaponSpeed(weapon, WEAPON_RELEASE_SPEED, WEAPON_RELEASE_DELAY);
     return MRES_Ignored;
@@ -891,7 +841,7 @@ public MRESReturn DHook_MeleeChargeReleaseSpeed(int weapon, Handle params)
  * Native signature:
  * void CBaseCombatWeapon::SecondaryAttack()
  */
-public MRESReturn DHook_MeleeSecondarySpeed(int weapon)
+MRESReturn DHook_MeleeSecondarySpeed(int weapon)
 {
     ChangeWeaponSpeed(weapon, WEAPON_SECONDARY_SPEED, WEAPON_SECONDARY_DELAY);
     return MRES_Ignored;
@@ -903,7 +853,7 @@ public MRESReturn DHook_MeleeSecondarySpeed(int weapon)
  * Native signature:
  * void CBaseCombatWeapon::PrimaryAttack()
  */
-public MRESReturn DHook_BarricadeSpeed(int hammer)
+MRESReturn DHook_BarricadeSpeed(int hammer)
 {
     ChangeWeaponSpeed(hammer, WEAPON_HIP_FIRE_SPEED, WEAPON_HIP_FIRE_DELAY);
     return MRES_Ignored;
@@ -915,7 +865,7 @@ public MRESReturn DHook_BarricadeSpeed(int hammer)
  * Native signature:
  * void CNMRiH_WeaponBase::CheckAmmo()
  */
-public MRESReturn DHook_FirearmCheckAmmo(int firearm)
+MRESReturn DHook_FirearmCheckAmmo(int firearm)
 {
     ChangeWeaponSpeed(firearm, WEAPON_CHECK_AMMO_SPEED, WEAPON_CHECK_AMMO_DELAY);
     return MRES_Ignored;
@@ -928,7 +878,7 @@ public MRESReturn DHook_FirearmCheckAmmo(int firearm)
  * Native signature:
  * void CBaseCombatWeapon::PrimaryAttack()
  */
-public MRESReturn DHook_BowShootSpeed(int bow)
+MRESReturn DHook_BowShootSpeed(int bow)
 {
     int player = GetEntOwner(bow);
     int user_id = GetClientUserId(player);
@@ -947,44 +897,12 @@ public MRESReturn DHook_BowShootSpeed(int bow)
 }
 
 /**
- * Change delay between shoves.
- *
- * Native signature:
- * void CNMRiH_WeaponBase::SetBashActionTime(float, bool)
- */
-// public MRESReturn DHook_ChangeWeaponShoveCooldown(int weapon, Handle params)
-// {
-//     MRESReturn result = MRES_Ignored;
-
-//     const int PARAM_COOLDOWN = 1;
-
-//     // Change shove cooldown.
-//     if (g_cvar_weapon_configs_enabled.BoolValue &&
-//         IsValidEdict(weapon) &&
-//         IsBaseCombatWeapon(weapon))
-//     {
-//         int id = GetWeaponID(weapon);
-//         if (id >= 0 && id < WEAPON_MAX)
-//         {
-//             float cooldown = g_weapon_options[id][WEAPON_SHOVE_COOLDOWN];
-//             if (cooldown >= 0.0)
-//             {
-//                 DHookSetParam(params, PARAM_COOLDOWN, cooldown);
-//                 result = MRES_ChangedHandled;
-//             }
-//         }
-//     }
-
-//     return result;
-// }
-
-/**
  * Store the player's current stamina amount.
  *
  * Native signature:
  * void CNMRiH_WeaponBase::DoShove(void)
  */
-public MRESReturn DHook_ChangeWeaponShoveCostPre(int weapon)
+MRESReturn DHook_ChangeWeaponShoveCostPre(int weapon)
 {
     StoreCurrentStamina(weapon);
     return MRES_Ignored;
@@ -996,7 +914,7 @@ public MRESReturn DHook_ChangeWeaponShoveCostPre(int weapon)
  * Native signature:
  * void CNMRiH_WeaponBase::DoShove(void)
  */
-public MRESReturn DHook_ChangeWeaponShoveCostPost(int weapon)
+MRESReturn DHook_ChangeWeaponShoveCostPost(int weapon)
 {
     ChangeStaminaCost(weapon, WEAPON_STAMINA_SHOVE);
     return MRES_Ignored;
@@ -1008,7 +926,7 @@ public MRESReturn DHook_ChangeWeaponShoveCostPost(int weapon)
  * Native signature:
  * void CNMRiH_WeaponBase::StartShove()
  */
-public MRESReturn DHook_WeaponShoveSpeed(int weapon)
+MRESReturn DHook_WeaponShoveSpeed(int weapon)
 {
     ChangeWeaponSpeed(weapon, WEAPON_SHOVE_SPEED, WEAPON_SHOVE_DELAY);
 
@@ -1021,7 +939,7 @@ public MRESReturn DHook_WeaponShoveSpeed(int weapon)
  * Native signature:
  * void CBaseCombatWeapon::PrimaryAttack()
  */
-public MRESReturn DHook_GrenadeStartThrowSpeed(int grenade)
+MRESReturn DHook_GrenadeStartThrowSpeed(int grenade)
 {
     ChangeWeaponSpeed(grenade, WEAPON_CHARGE_SPEED, WEAPON_CHARGE_DELAY);
     return MRES_Ignored;
@@ -1033,7 +951,7 @@ public MRESReturn DHook_GrenadeStartThrowSpeed(int grenade)
  * Native signature:
  * void CWeaponGrenade::EmitGrenade(Vector,QAngle,Vector,Vector,CBasePlayer *,CWeaponSDKBase *)
  */
-public MRESReturn DHook_GrenadeFinishThrowSpeed(int grenade, Handle params)
+MRESReturn DHook_GrenadeFinishThrowSpeed(int grenade)
 {
     if (g_cvar_weapon_configs_enabled.BoolValue)
     {
@@ -1049,7 +967,7 @@ public MRESReturn DHook_GrenadeFinishThrowSpeed(int grenade, Handle params)
  * Native signature:
  * void CNMRiH_MeleeBase::DoMeleeSwing(int)
  */
-public MRESReturn DHook_ChangeFistsStaminaPre(int fists, Handle params)
+MRESReturn DHook_ChangeFistsStaminaPre(int fists)
 {
     StoreCurrentStamina(fists);
     return MRES_Ignored;
@@ -1062,20 +980,9 @@ public MRESReturn DHook_ChangeFistsStaminaPre(int fists, Handle params)
  * Native signature:
  * void CNMRiH_MeleeBase::DoMeleeSwing(int)
  */
-public MRESReturn DHook_ChangeFistsStaminaPost(int fists, Handle params)
+MRESReturn DHook_ChangeFistsStaminaPost(int fists)
 {
     ChangeStaminaCost(fists, WEAPON_STAMINA_MELEE);
-    return MRES_Ignored;
-}
-
-/**
- * This callback is necessary to create a post-detour.
- *
- * Native signature:
- * bool CNMRiH_MeleeBase::ShouldMeleePushback()
- */
-public MRESReturn Detour_MeleePushbackPre(int melee, Handle return_handle)
-{
     return MRES_Ignored;
 }
 
@@ -1085,7 +992,7 @@ public MRESReturn Detour_MeleePushbackPre(int melee, Handle return_handle)
  * Native signature:
  * bool CNMRiH_MeleeBase::ShouldMeleePushback()
  */
-public MRESReturn Detour_MeleePushbackPost(int melee, Handle return_handle)
+MRESReturn Detour_MeleePushbackPost(int melee, Handle return_handle)
 {
     MRESReturn result = MRES_Ignored;
 
@@ -1119,7 +1026,7 @@ public MRESReturn Detour_MeleePushbackPost(int melee, Handle return_handle)
  * Native signature:
  * void CNMRiH_MeleeBase::DrainMeleeSwingStamina(void)
  */
-public MRESReturn Detour_MeleeStaminaPre(int weapon)
+MRESReturn Detour_MeleeStaminaPre(int weapon)
 {
     StoreCurrentStamina(weapon);
     return MRES_Ignored;
@@ -1131,20 +1038,9 @@ public MRESReturn Detour_MeleeStaminaPre(int weapon)
  * Native signature:
  * void CNMRiH_MeleeBase::DrainMeleeSwingStamina(void)
  */
-public MRESReturn Detour_MeleeStaminaPost(int weapon)
+MRESReturn Detour_MeleeStaminaPost(int weapon)
 {
     ChangeStaminaCost(weapon, WEAPON_STAMINA_MELEE);
-    return MRES_Ignored;
-}
-
-/**
- * This callback is necessary to create a post-detour.
- *
- * Native signature:
- * void CNMRiH_WeaponBase::Unload()
- */
-public MRESReturn Detour_FirearmUnloadSpeedPre(int firearm)
-{
     return MRES_Ignored;
 }
 
@@ -1154,20 +1050,9 @@ public MRESReturn Detour_FirearmUnloadSpeedPre(int firearm)
  * Native signature:
  * void CNMRiH_WeaponBase::Unload()
  */
-public MRESReturn Detour_FirearmUnloadSpeedPost(int firearm)
+MRESReturn Detour_FirearmUnloadSpeedPost(int firearm)
 {
     ChangeWeaponSpeed(firearm, WEAPON_UNLOAD_SPEED, WEAPON_UNLOAD_DELAY);
-    return MRES_Ignored;
-}
-
-/**
- * This callback is necessary to create a post-detour.
- *
- * Native signature:
- * bool CNMRiH_WeaponBase::AllowsSuicide()
- */
-public MRESReturn Detour_CanSuicidePre(int weapon, Handle return_handle)
-{
     return MRES_Ignored;
 }
 
@@ -1177,7 +1062,7 @@ public MRESReturn Detour_CanSuicidePre(int weapon, Handle return_handle)
  * Native signature:
  * bool CNMRiH_WeaponBase::AllowsSuicide()
  */
-public MRESReturn Detour_CanSuicidePost(int weapon, Handle return_handle)
+MRESReturn Detour_CanSuicidePost(int weapon, Handle return_handle)
 {
     MRESReturn result = MRES_Ignored;
 
@@ -1196,44 +1081,33 @@ public MRESReturn Detour_CanSuicidePost(int weapon, Handle return_handle)
 }
 
 /**
- * This callback is necessary to create a post-detour.
- *
- * Native signature:
- * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
- */
-public MRESReturn Detour_CanSkillshotPre(int weapon, Handle return_handle)
-{
-    return MRES_Ignored;
-}
-
-/**
  * Set whether a weapon can enter skillshot mode.
  *
  * Native signature:
  * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
  */
-public MRESReturn Detour_CanSkillshotPost(int weapon, Handle return_handle)
-{
-    MRESReturn result = MRES_Ignored;
-
-    int id = GetWeaponID(weapon);
-    if (id >= 0 && id < WEAPON_MAX)
+MRESReturn Detour_CanSkillshotPre(int weapon, Handle return_handle)
+{ 
+    DHookSetReturn(return_handle, 1);            return MRES_Override;
+    if (GetEntProp(weapon, Prop_Send, "m_bIsInIronsights"))
     {
-        float skillshot = g_weapon_options[id][WEAPON_CAN_SKILLSHOT];
-        if (skillshot >= 0.0)
-        {
-            DHookSetReturn(return_handle, skillshot > 0.0);
-            result = MRES_Override;
-        }
-    }
+        int id = GetWeaponID(weapon);
 
-    return result;
+        if (id >= 0 && id < WEAPON_MAX)
+        {
+            float skillshot = g_weapon_options[id][WEAPON_CAN_SKILLSHOT];
+            DHookSetReturn(return_handle, skillshot >= 0.0);
+            return MRES_Override;
+        } 
+    }
+    
+    return MRES_Ignored;
 }
 
 /**
  * Change grenade's throw animation speed.
  */
-public void OnFrame_GrenadeFinishThrowSpeed(int grenade_ref)
+void OnFrame_GrenadeFinishThrowSpeed(int grenade_ref)
 {
     int grenade = EntRefToEntIndex(grenade_ref);
     if (grenade != INVALID_ENT_REFERENCE)
@@ -1249,7 +1123,7 @@ public void OnFrame_GrenadeFinishThrowSpeed(int grenade_ref)
  * @param client        Client that switched weapons.
  * @param weapon        Edict of weapon the player switched to.
  */
-public Action Hook_PlayerWeaponSwitch(int client, int weapon)
+Action Hook_PlayerWeaponSwitch(int client, int weapon)
 {
     static const char FIREARM_PREFIX[] = "fa_";
 
@@ -1288,7 +1162,7 @@ public Action Hook_PlayerWeaponSwitch(int client, int weapon)
 /**
  * Change the explosive properties of TNT.
  */
-public Action Hook_ChangeTNT(int tnt)
+Action Hook_ChangeTNT(int tnt)
 {
     if (IsValidEdict(tnt))
     {
@@ -1300,7 +1174,7 @@ public Action Hook_ChangeTNT(int tnt)
 /**
  * Change the explosive properties of frag grenades.
  */
-public Action Hook_ChangeFragGrenade(int grenade)
+Action Hook_ChangeFragGrenade(int grenade)
 {
     if (IsValidEdict(grenade))
     {
@@ -1312,7 +1186,7 @@ public Action Hook_ChangeFragGrenade(int grenade)
 /**
  * Change molotov properties.
  */
-public Action Hook_ChangeMolotov(int molotov)
+Action Hook_ChangeMolotov(int molotov)
 {
     if (IsValidEdict(molotov))
     {
@@ -1324,7 +1198,7 @@ public Action Hook_ChangeMolotov(int molotov)
 /**
  * Change reload speed of firearm.
  */
-public Action Hook_ChangeReloadSpeed(int firearm)
+Action Hook_ChangeReloadSpeed(int firearm)
 {
     if (!g_cvar_weapon_configs_enabled.BoolValue)
     {
@@ -1390,7 +1264,7 @@ public Action Hook_ChangeReloadSpeed(int firearm)
  * Native signature:
  * void CBaseCombatWeapon::PrimaryAttack()
  */
-public MRESReturn DHook_FirearmShootSpeed(int weapon)
+MRESReturn DHook_FirearmShootSpeed(int weapon)
 {
     int player = GetEntOwner(weapon);
 
@@ -1422,7 +1296,7 @@ public MRESReturn DHook_FirearmShootSpeed(int weapon)
  * Native signature:
  * void CNMRiH_WeaponBase::TurnOnIronsights()
  */
-public MRESReturn DHook_FirearmSightSpeed(int weapon)
+MRESReturn DHook_FirearmSightSpeed(int weapon)
 {
     ChangeWeaponSpeed(weapon, WEAPON_SIGHT_SPEED, WEAPON_SIGHT_DELAY);
     return MRES_Ignored;
@@ -1434,7 +1308,7 @@ public MRESReturn DHook_FirearmSightSpeed(int weapon)
  * Native signature:
  * void CNMRiH_WeaponBase::TurnOffIronsights()
  */
-public MRESReturn DHook_FirearmUnsightSpeed(int weapon)
+MRESReturn DHook_FirearmUnsightSpeed(int weapon)
 {
     ChangeWeaponSpeed(weapon, WEAPON_UNSIGHT_SPEED, WEAPON_UNSIGHT_DELAY);
     return MRES_Ignored;
@@ -1446,7 +1320,7 @@ public MRESReturn DHook_FirearmUnsightSpeed(int weapon)
  * Native signature:
  * void CBaseCombatWeapon::SecondaryAttack()
  */
-public MRESReturn DHook_MagliteSpeed(int maglite)
+MRESReturn DHook_MagliteSpeed(int maglite)
 {
     ChangeMagliteSpeed(maglite, SDKCall(g_sdkcall_weapon_is_flashlight_on, maglite));
     return MRES_Ignored;
@@ -1458,7 +1332,7 @@ public MRESReturn DHook_MagliteSpeed(int maglite)
  * Native signature:
  * void CNMRiH_WeaponBase::ToggleFlashlight()
  */
-public MRESReturn DHook_WeaponPreMagliteToggle(int weapon)
+MRESReturn DHook_WeaponPreMagliteToggle(int weapon)
 {
     int owner = GetEntOwner(weapon);
     if (owner != -1)
@@ -1474,7 +1348,7 @@ public MRESReturn DHook_WeaponPreMagliteToggle(int weapon)
  * Native signature:
  * void CNMRiH_WeaponBase::ToggleFlashlight()
  */
-public MRESReturn DHook_WeaponMagliteSpeed(int weapon)
+MRESReturn DHook_WeaponMagliteSpeed(int weapon)
 {
     int owner = GetEntOwner(weapon);
 
@@ -2117,17 +1991,6 @@ void ParseWeaponKeyValues(KeyValues kv)
 
                 if (StrEqual(weapon_name, "tool_flare_gun"))
                 {
-                    float radius = g_weapon_options[id][WEAPON_RADIUS];
-                    if (radius >= 0.0)
-                    {
-                        if (radius > 256.0)
-                        {
-                            LogError("%s Warning: Large flare gun radius can cause game crashes! Default radius: %f, Current radius: %f",
-                                WEAPON_CONFIGS_TAG, DEFAULT_FLARE_GUN_RADIUS, radius);
-                        }
-                        SetFlareGunRadius(radius);
-                    }
-
                     float damage = g_weapon_options[id][WEAPON_DAMAGE_LO];
                     if (damage < 0.0)
                     {
@@ -2269,7 +2132,7 @@ void LoadSDKCalls(Handle gameconf)
     g_sdkcall_get_weapon_id = EndPrepSDKCall();
 }
 
-void LoadDHooks(Handle gameconf)
+void LoadDHooks(GameData gameconf)
 {
     // Change speed of medical item use.
     g_dhook_medical_speed = DHookCreateFromConfOrFail(gameconf, "CNMRiH_BaseMedicalItem::ShouldUseMedicalItem");
@@ -2352,87 +2215,39 @@ void LoadDHooks(Handle gameconf)
 /**
  * Create dynamic detours.
  */
-void LoadDetours(Handle gameconf)
+void LoadDetours(GameData gameconf)
 {
-    g_detours = CreateDataPack();
-
-    CreateDetourOrFail(gameconf, "CNMRiH_MeleeBase::ShouldMeleePushback",
-        Detour_MeleePushbackPre, Detour_MeleePushbackPost);
-
-    CreateDetourOrFail(gameconf, "CNMRiH_MeleeBase::DrainMeleeSwingStamina",
-        Detour_MeleeStaminaPre, Detour_MeleeStaminaPost);
-
-    CreateDetourOrFail(gameconf, "CNMRiH_WeaponBase::Unload",
-        Detour_FirearmUnloadSpeedPre, Detour_FirearmUnloadSpeedPost);
-
-    CreateDetourOrFail(gameconf, "CNMRiH_WeaponBase::AllowsSuicide",
-        Detour_CanSuicidePre, Detour_CanSuicidePost);
-
-    if (g_is_linux_server)
-    {
-        CreateDetourOrFail(gameconf, "CNMRiH_WeaponBase::IsSkillshotModeAvailable",
-            Detour_CanSkillshotPre, Detour_CanSkillshotPost);
-    }
+    RegDetour(gameconf, "CNMRiH_MeleeBase::ShouldMeleePushback", .post = Detour_MeleePushbackPost);
+    RegDetour(gameconf, "CNMRiH_MeleeBase::DrainMeleeSwingStamina", Detour_MeleeStaminaPre, Detour_MeleeStaminaPost);
+    RegDetour(gameconf, "CNMRiH_WeaponBase::Unload", .post = Detour_FirearmUnloadSpeedPost);
+    RegDetour(gameconf, "CNMRiH_WeaponBase::AllowsSuicide", .post = Detour_CanSuicidePost);
+    RegDetour(gameconf, "CNMRiH_WeaponBase::IsSkillshotModeAvailable", Detour_CanSkillshotPre);
 }
 
 /**
- * Create a dynamic detour. Update the detour list so we can automatically
- * clean up our detours on exit. This might not be necessary in the new
- * versions of DHooks.
+ * Create a dynamic detour. 
  *
  * @param gameconf      Handle to gamedata.
  * @param key           Name of hook as found in gamedata's Functions.
- * @param pre_callback  Pre-detour callback (required).
+ * @param pre_callback  Pre-detour callback (optional).
  * @param post_callback Post-detour callback (optional).
  */
-void CreateDetourOrFail(Handle gameconf, const char[] key, DHookCallback pre_callback, DHookCallback post_callback = INVALID_FUNCTION)
+void RegDetour(GameData conf, 
+    const char[] name, 
+    DHookCallback pre = INVALID_FUNCTION, 
+    DHookCallback post = INVALID_FUNCTION)
 {
-    Handle pre_detour = DHookCreateDetourFromConfOrFail(gameconf, key, DHOOK_PRE, pre_callback);
+    DynamicDetour detour = DynamicDetour.FromConf(conf, name);
+    if (!detour)
+        SetFailState("Failed to setup detour for %s", name);
+    
+    if (pre != INVALID_FUNCTION && !detour.Enable(Hook_Pre, pre))
+        SetFailState("Failed to enable pre detour for %s", name);
 
-    Handle post_detour = null;
-    if (post_callback != INVALID_FUNCTION)
-    {
-        post_detour = DHookCreateDetourFromConfOrFail(gameconf, key, DHOOK_POST, post_callback);
-    }
+    if (post != INVALID_FUNCTION && !detour.Enable(Hook_Pre, post))
+        SetFailState("Failed to enable post detour for %s", name);
 
-    g_detours.WriteString(key);
-    g_detours.WriteFunction(post_callback);
-    g_detours.WriteCell(post_detour);
-    g_detours.WriteFunction(pre_callback);
-    g_detours.WriteCell(pre_detour);
-}
-
-/**
- * Unload dynamic detours.
- */
-void UnloadDetours()
-{
-    if (g_detours != null)
-    {
-        g_detours.Reset();
-
-        char key[128];
-        while (g_detours.IsReadable(1))
-        {
-            g_detours.ReadString(key, sizeof(key));
-
-            DHookCallback callback = view_as<DHookCallback>(g_detours.ReadFunction());
-            Handle detour = g_detours.ReadCell();
-            if (detour != null && !DHookDisableDetour(detour, DHOOK_POST, callback))
-            {
-                LogError("Failed to remove post-detour of %s", key);
-            }
-
-            callback = view_as<DHookCallback>(g_detours.ReadFunction());
-            detour = g_detours.ReadCell();
-            if (detour != null && !DHookDisableDetour(detour, DHOOK_PRE, callback))
-            {
-                LogError("Failed to remove pre-detour of %s", key);
-            }
-        }
-
-        delete g_detours;
-    }
+    delete detour;
 }
 
 /**
@@ -2455,35 +2270,6 @@ float GetOption(KeyValues kv, const char[] key)
 }
 
 /**
- * Convert a hex-encoded string to a buffer of bytes.
- */
-int HexStringToBytes(char[] buffer)
-{
-    // Length of pattern to match. Pattern looks like: 0xFF
-    const int pattern_length = 4;
-
-    int bytes = 0;
-    bool ok = true;
-
-    do
-    {
-        int byte = 0;
-        int i = bytes * pattern_length;
-        ok = buffer[i] == '\\' && buffer[i + 1] == 'x' &&
-            StringToIntEx(buffer[i + 2], byte, 16) == 2;
-        if (ok)
-        {
-            buffer[bytes] = view_as<char>(byte);
-            ++bytes;
-        }
-    }
-    while (ok);
-
-    buffer[bytes] = '\0';
-    return bytes;
-}
-
-/**
  * Retrieve an offset from a game conf or abort the plugin.
  */
 int GameConfGetOffsetOrFail(Handle gameconf, const char[] key)
@@ -2498,35 +2284,9 @@ int GameConfGetOffsetOrFail(Handle gameconf, const char[] key)
 }
 
 /**
- * Retrieve an address from a game conf or abort the plugin.
- */
-Address GameConfGetAddressOrFail(Handle gameconf, const char[] key)
-{
-    Address address = GameConfGetAddress(gameconf, key);
-    if (address == Address_Null)
-    {
-        CloseHandle(gameconf);
-        SetFailState("Failed to read gamedata address of %s", key);
-    }
-    return address;
-}
-
-/**
- * Retrieve key-value from a game conf or abort the plugin.
- */
-void GameConfGetKeyValueOrFail(Handle gameconf, const char[] key, char[] buffer, int buffer_size)
-{
-    if (!GameConfGetKeyValue(gameconf, key, buffer, buffer_size))
-    {
-        CloseHandle(gameconf);
-        SetFailState("Failed to read gamedata key-value of %s", key);
-    }
-}
-
-/**
  * Create a DHook from a game conf or abort the plugin.
  */
-Handle DHookCreateFromConfOrFail(Handle gameconf, const char[] key)
+Handle DHookCreateFromConfOrFail(GameData gameconf, const char[] key)
 {
     Handle result = DHookCreateFromConf(gameconf, key);
     if (!result)
@@ -2535,148 +2295,6 @@ Handle DHookCreateFromConfOrFail(Handle gameconf, const char[] key)
         SetFailState("Failed to create DHook for %s", key);
     }
     return result;
-}
-
-/**
- * Create a DHook detour from a game conf and enable it or abort the plugin.
- */
-Handle DHookCreateDetourFromConfOrFail(Handle gameconf, const char[] key, bool post, DHookCallback callback)
-{
-    Handle detour = DHookCreateFromConfOrFail(gameconf, key);
-    if (!DHookEnableDetour(detour, post, callback))
-    {
-        LogError("Failed to enable detour for %s");
-    }
-    return detour;
-}
-
-/**
- * Write the bytes of an int to a char buffer.
- */
-void WriteIntBytesToCharArray(char[] buffer, int index, int value)
-{
-    for (int i = 0; i < SIZEOF_INT; ++i)
-    {
-        buffer[index + i] = (value >> (i * 8)) & 0xFF;
-    }
-}
-
-void LoadManyBytesFromAddress(Address address, char[] buffer, int byte_count)
-{
-    for (int i = 0; i < byte_count; ++i)
-    {
-        buffer[i] = view_as<char>(LoadFromAddress(OffsetAddress(address, i), NumberType_Int8));
-    }
-}
-
-void StoreManyBytesToAddress(Address address, const char[] bytes, int byte_count)
-{
-    for (int i = 0; i < byte_count; ++i)
-    {
-        StoreToAddress(OffsetAddress(address, i), view_as<int>(bytes[i]), NumberType_Int8);
-    }
-}
-
-/**
- * Get the offset of an address (hides cast inside function call).
- */
-Address OffsetAddress(Address address, int offset)
-{
-    return address + view_as<Address>(offset);
-}
-
-/**
- * Allow the explosion radius of the flare gun projectile to be changed.
- *
- * On Linux this just needs to change one value in code.
- *
- * On Windows, we need an address to an unused section of memory where we can
- * store our custom blast radius.
- *
- */
-void PatchFlareGunRadius(Handle gameconf)
-{
-    if (g_is_linux_server)
-    {
-        g_flare_gun_patch_address = GameConfGetAddressOrFail(gameconf, "CNMRiHFlareProjectile::FlyThink@BlastRadius");
-    }
-    else
-    {
-        // Locate a suitable code cave location.
-        g_flare_gun_patch_code_cave = GameConfGetAddressOrFail(gameconf, "CodeCaveForFlareGunRadius");
-        g_flare_gun_patch_trampoline = GameConfGetAddressOrFail(gameconf, "TrampolineForFlareGunRadius");
-
-        // Retrieve code cave and trampoline byte code (ASCII text, e.g. "\x05\xA4" vs literal 0x05A4)
-        char code_cave[256];
-        GameConfGetKeyValueOrFail(gameconf, "FlareGunRadiusCodeCave", code_cave, sizeof(code_cave));
-
-        char trampoline[256];
-        GameConfGetKeyValueOrFail(gameconf, "FlareGunRadiusTrampoline", trampoline, sizeof(trampoline));
-
-        // Initialize trampoline with jump address.
-        int trampoline_size = HexStringToBytes(trampoline);
-        int offset = GameConfGetOffsetOrFail(gameconf, "FlareGunRadiusTrampoline.CodeCaveAddress");
-        WriteIntBytesToCharArray(trampoline, offset, view_as<int>(g_flare_gun_patch_code_cave));
-
-        // Initialize code cave's default float and return address.
-        int code_cave_size = HexStringToBytes(code_cave);
-        {
-            offset = GameConfGetOffsetOrFail(gameconf, "FlareGunRadiusCodeCave.Radius");
-            WriteIntBytesToCharArray(code_cave, offset, view_as<int>(DEFAULT_FLARE_GUN_RADIUS));
-            g_flare_gun_patch_address = OffsetAddress(g_flare_gun_patch_code_cave, offset);
-
-            offset = GameConfGetOffsetOrFail(gameconf, "FlareGunRadiusCodeCave.ReturnAddress");
-            WriteIntBytesToCharArray(code_cave, offset, view_as<int>(g_flare_gun_patch_trampoline) + trampoline_size);
-        }
-
-        // Create backups of original byte code.
-        g_flare_gun_patch_original_trampoline_size = trampoline_size;
-        LoadManyBytesFromAddress(g_flare_gun_patch_trampoline, g_flare_gun_patch_original_trampoline, trampoline_size);
-
-        g_flare_gun_patch_original_code_cave_size = code_cave_size;
-        LoadManyBytesFromAddress(g_flare_gun_patch_code_cave, g_flare_gun_patch_original_code_cave, code_cave_size);
-
-        // Write our byte code.
-        StoreManyBytesToAddress(g_flare_gun_patch_code_cave, code_cave, code_cave_size);
-        StoreManyBytesToAddress(g_flare_gun_patch_trampoline, trampoline, trampoline_size);
-    }
-
-    PrintToServer("%s Applied memory patch for custom flare gun blast radius.", WEAPON_CONFIGS_TAG);
-}
-
-/**
- * Restore flare gun blast radius to defaults.
- */
-void UnpatchFlareGunRadius()
-{
-    if (g_flare_gun_patch_address != Address_Null)
-    {
-        if (g_is_linux_server)
-        {
-            SetFlareGunRadius(DEFAULT_FLARE_GUN_RADIUS);
-        }
-        else
-        {
-            if (g_flare_gun_patch_trampoline != Address_Null && g_flare_gun_patch_original_trampoline_size > 0)
-            {
-                StoreManyBytesToAddress(g_flare_gun_patch_trampoline, g_flare_gun_patch_original_trampoline, g_flare_gun_patch_original_trampoline_size);
-            }
-            if (g_flare_gun_patch_code_cave != Address_Null && g_flare_gun_patch_original_code_cave_size > 0)
-            {
-                StoreManyBytesToAddress(g_flare_gun_patch_code_cave, g_flare_gun_patch_original_code_cave, g_flare_gun_patch_original_code_cave_size);
-            }
-        }
-
-        PrintToServer("%s Removed memory patch for custom flare gun blast radius.", WEAPON_CONFIGS_TAG);
-    }
-}
-
-/**
- * Change the blast radius of the flare gun's projectile.
- */
-void SetFlareGunRadius(float radius)
-{
-    StoreToAddress(g_flare_gun_patch_address, view_as<int>(radius), NumberType_Int32);
 }
 
 /**
@@ -2697,18 +2315,6 @@ float GetWeaponDamage(int weapon_id, eWeaponOption lo)
     float high = g_weapon_options[weapon_id][hi];
 
     return GetRandomFloat(low, high);
-}
-
-/**
- * Return true if the current Sourcemod version is newer than a specific
- * version.
- */
-bool IsSourcemodNewerThan(int major, int minor, int patch, int build)
-{
-    return g_sourcemod_major >= major &&
-        g_sourcemod_minor >= minor &&
-        g_sourcemod_patch >= patch &&
-        g_sourcemod_build > build;
 }
 
 /**
@@ -2776,40 +2382,16 @@ void GetSourcemodVersion()
 /**
  * Retrieve edict's classname and compare it to a string.
  */
-stock bool IsClassnameEqual(int entity, char[] classname, int classname_size, const char[] compare_to)
+bool IsClassnameEqual(int entity, char[] classname, int classname_size, const char[] compare_to)
 {
     GetEdictClassname(entity, classname, classname_size);
     return StrEqual(classname, compare_to);
 }
 
 /**
- * Limit value between min and max.
- */
-stock float ClampFloat(float value, float min, float max)
-{
-    if (min > max)
-    {
-        float temp = min;
-        min = max;
-        max = temp;
-    }
-
-    if (value < min)
-    {
-        value = min;
-    }
-    else if (value > max)
-    {
-        value = max;
-    }
-
-    return value;
-}
-
-/**
  * Retrieve an entity's owner.
  */
-stock int GetEntOwner(int entity)
+int GetEntOwner(int entity)
 {
     return GetEntPropEnt(entity, Prop_Send, "m_hOwnerEntity");
 }
@@ -2817,21 +2399,9 @@ stock int GetEntOwner(int entity)
 /**
  * Retrieve id of player's current weapon.
  */
-stock int GetClientActiveWeapon(int client)
+int GetClientActiveWeapon(int client)
 {
     return GetEntPropEnt(client, Prop_Send, "m_hActiveWeapon");
-}
-
-/**
- * Retrieve an entity's health.
- *
- * @param entity            Entity to query.
- *
- * @return                  Entity's health.
- */
-stock int GetEntHealth(int entity)
-{
-    return GetEntProp(entity, Prop_Data, "m_iHealth");
 }
 
 /**
@@ -2841,7 +2411,7 @@ stock int GetEntHealth(int entity)
  *
  * @return                  Entity's max health.
  */
-stock int GetEntMaxHealth(int entity)
+int GetEntMaxHealth(int entity)
 {
     return GetEntProp(entity, Prop_Data, "m_iMaxHealth");
 }
@@ -2849,7 +2419,7 @@ stock int GetEntMaxHealth(int entity)
 /**
  * Retrieve entity's current sequence.
  */
-stock int GetEntSequence(int entity)
+int GetEntSequence(int entity)
 {
     return GetEntProp(entity, Prop_Send, "m_nSequence");
 }
@@ -2857,7 +2427,7 @@ stock int GetEntSequence(int entity)
 /**
  * Retrieve entity's previous sequence.
  */
-stock int GetEntPreviousSequence(int entity)
+int GetEntPreviousSequence(int entity)
 {
     return GetEntProp(entity, Prop_Send, "m_iPreviousSequence");
 }
@@ -2865,7 +2435,7 @@ stock int GetEntPreviousSequence(int entity)
 /**
  * Retrieve minimum game time when weapon can shove again.
  */
-stock float GetWeaponNextShoveTime(int weapon)
+float GetWeaponNextShoveTime(int weapon)
 {
     return GetEntPropFloat(weapon, Prop_Send, "m_flNextBashAttack");
 }
@@ -2873,7 +2443,7 @@ stock float GetWeaponNextShoveTime(int weapon)
 /**
  * Change player's stamina.
  */
-stock void SetPlayerStamina(int player, float stamina)
+void SetPlayerStamina(int player, float stamina)
 {
     SetEntPropFloat(player, Prop_Send, "m_flStamina", stamina);
 }
@@ -2881,7 +2451,7 @@ stock void SetPlayerStamina(int player, float stamina)
 /**
  * Retrieve player's current stamina.
  */
-stock float GetPlayerStamina(int player)
+float GetPlayerStamina(int player)
 {
     return GetEntPropFloat(player, Prop_Send, "m_flStamina");
 }
