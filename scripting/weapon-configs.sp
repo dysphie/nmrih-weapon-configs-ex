@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.6"
+#define WEAPON_CONFIGS_VERSION "1.1.7"
 
 public Plugin myinfo =
 {
@@ -1081,30 +1081,6 @@ MRESReturn Detour_CanSuicidePost(int weapon, Handle return_handle)
 }
 
 /**
- * Set whether a weapon can enter skillshot mode.
- *
- * Native signature:
- * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
- */
-MRESReturn Detour_CanSkillshotPre(int weapon, Handle return_handle)
-{ 
-    DHookSetReturn(return_handle, 1);            return MRES_Override;
-    if (GetEntProp(weapon, Prop_Send, "m_bIsInIronsights"))
-    {
-        int id = GetWeaponID(weapon);
-
-        if (id >= 0 && id < WEAPON_MAX)
-        {
-            float skillshot = g_weapon_options[id][WEAPON_CAN_SKILLSHOT];
-            DHookSetReturn(return_handle, skillshot >= 0.0);
-            return MRES_Override;
-        } 
-    }
-    
-    return MRES_Ignored;
-}
-
-/**
  * Change grenade's throw animation speed.
  */
 void OnFrame_GrenadeFinishThrowSpeed(int grenade_ref)
@@ -1543,6 +1519,41 @@ void ChangeBowSpeed(int client, int bow, float rate, float delay, bool start_of_
     }
 
     SetEntPropFloat(bow, Prop_Send, "m_flTimeWeaponIdle", new_idle);
+}
+
+/**
+ * This callback is necessary to create a post-detour.
+ *
+ * Native signature:
+ * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
+ */
+public MRESReturn Detour_CanSkillshotPre(int weapon, Handle return_handle)
+{
+    return MRES_Ignored;
+}
+
+/**
+ * Set whether a weapon can enter skillshot mode.
+ *
+ * Native signature:
+ * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
+ */
+public MRESReturn Detour_CanSkillshotPost(int weapon, Handle return_handle)
+{
+    MRESReturn result = MRES_Ignored;
+
+    int id = GetWeaponID(weapon);
+    if (id >= 0 && id < WEAPON_MAX)
+    {
+        float skillshot = g_weapon_options[id][WEAPON_CAN_SKILLSHOT];
+        if (skillshot >= 0.0)
+        {
+            DHookSetReturn(return_handle, skillshot > 0.0);
+            result = MRES_Override;
+        }
+    }
+
+    return result;
 }
 
 /**
@@ -2222,6 +2233,12 @@ void LoadDetours(GameData gameconf)
     RegDetour(gameconf, "CNMRiH_WeaponBase::Unload", .post = Detour_FirearmUnloadSpeedPost);
     RegDetour(gameconf, "CNMRiH_WeaponBase::AllowsSuicide", .post = Detour_CanSuicidePost);
     RegDetour(gameconf, "CNMRiH_WeaponBase::IsSkillshotModeAvailable", Detour_CanSkillshotPre);
+
+    if (g_is_linux_server)
+    {
+        RegDetour(gameconf, "CNMRiH_WeaponBase::IsSkillshotModeAvailable", 
+            Detour_CanSkillshotPre, Detour_CanSkillshotPost);
+    }
 }
 
 /**
