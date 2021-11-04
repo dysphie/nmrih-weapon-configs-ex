@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.7"
+#define WEAPON_CONFIGS_VERSION "1.1.8"
 
 public Plugin myinfo =
 {
@@ -213,7 +213,6 @@ bool g_player_maglite_on[MAXPLAYERS + 1];
 eWeaponType g_player_weapon_type[MAXPLAYERS + 1] = { WEAPON_TYPE_OTHER, ... };
 float g_player_stamina_pre_call[MAXPLAYERS + 1] = { 0.0, ... };
 
-int g_offset_bow_release_time;              // Game time that bow's arrow can be shot. Offset into CNMRiH_BaseBow.
 int g_offset_takedamageinfo_inflictor;
 int g_offset_takedamageinfo_attacker;
 int g_offset_takedamageinfo_damage;
@@ -223,7 +222,6 @@ int g_offset_gametrace_hitgroup;            // Hitgroup member of CGameTrace.
 Handle g_sdkcall_weapon_is_flashlight_on;
 Handle g_sdkcall_player_has_flashlight;
 Handle g_sdkcall_weapon_is_flashlight_allowed;
-Handle g_sdkcall_is_base_combat_weapon;
 Handle g_sdkcall_get_weapon_id;
 
 Handle g_dhook_heal_amount;                     // Change heal amount
@@ -285,7 +283,6 @@ public void OnPluginStart()
         SetFailState("Failed to load game data.");
 
     g_is_linux_server = GameConfGetOffsetOrFail(gameconf, "IsLinux") != 0;
-    g_offset_bow_release_time = GameConfGetOffsetOrFail(gameconf, "CNMRiH_BaseBow::m_flArrowReleaseTime");
     g_offset_takedamageinfo_inflictor = GameConfGetOffsetOrFail(gameconf, "CTakeDamageInfo::m_hInflictor");
     g_offset_takedamageinfo_attacker = GameConfGetOffsetOrFail(gameconf, "CTakeDamageInfo::m_hAttacker");
     g_offset_takedamageinfo_damage = GameConfGetOffsetOrFail(gameconf, "CTakeDamageInfo::m_flDamage");
@@ -306,7 +303,7 @@ public void OnPluginStart()
         "1 = Enable plugin. 0 = Disable plugin.");
     g_cvar_weapon_configs_enabled.AddChangeHook(ConVar_OnWeaponConfigsEnabledChange);
 
-    g_cvar_weapon_config = CreateConVar("sm_weapon_config", "qol-weapons",
+    g_cvar_weapon_config = CreateConVar("sm_weapon_config", "weapon-configs",
         "Name of config file in sourcemod/configs to read for weapon settings. Use empty (\"\") for normal weapon behaviour.");
     g_cvar_weapon_config.AddChangeHook(ConVar_OnWeaponConfigChange);
 
@@ -1460,30 +1457,30 @@ void ChangeBowSpeed(int client, int bow, float rate, float delay, bool start_of_
     }
 
     // Change animation speed.
-    SetEntPropFloat(bow, Prop_Send, "m_flPlaybackRate", rate);
-    int view_model = GetEntPropEnt(client, Prop_Send, "m_hViewModel");
-    if (view_model != -1)
-    {
-        SetEntPropFloat(view_model, Prop_Send, "m_flPlaybackRate", rate);
-    }
+    // SetEntPropFloat(bow, Prop_Send, "m_flPlaybackRate", rate);
+    // int view_model = GetEntPropEnt(client, Prop_Send, "m_hViewModel");
+    // if (view_model != -1)
+    // {
+    //     SetEntPropFloat(view_model, Prop_Send, "m_flPlaybackRate", rate);
+    // }
 
-    if (start_of_attack)
-    {
-        float normal_release = GetEntDataFloat(bow, g_offset_bow_release_time);
-        float new_release = normal_release;
+    // if (start_of_attack)
+    // {
+    //     float normal_release = GetEntDataFloat(bow, g_offset_bow_release_time);
+    //     float new_release = normal_release;
 
-        if (delay >= 0.0)
-        {
-            new_release = now + delay;
-        }
-        else if (rate != 1.0)
-        {
-            // Sync arrow's release time to animation.
-            new_release = now + ((normal_release - now) / rate);
-        }
+    //     if (delay >= 0.0)
+    //     {
+    //         new_release = now + delay;
+    //     }
+    //     else if (rate != 1.0)
+    //     {
+    //         // Sync arrow's release time to animation.
+    //         new_release = now + ((normal_release - now) / rate);
+    //     }
 
-        SetEntDataFloat(bow, g_offset_bow_release_time, new_release);
-    }
+    //     SetEntDataFloat(bow, g_offset_bow_release_time, new_release);
+    // }
 
     int seq = GetEntSequence(bow);
     if (seq == SEQUENCE_BOW_FIRE || seq == SEQUENCE_BOW_FIRE_LAST)
@@ -1725,7 +1722,7 @@ void ChangeStaminaCost(int weapon, eWeaponOption cost)
  */
 bool IsBaseCombatWeapon(int entity)
 {
-    return SDKCall(g_sdkcall_is_base_combat_weapon, entity);
+    return HasEntProp(entity, Prop_Send, "m_flNextPrimaryAttack");
 }
 
 /**
@@ -2127,13 +2124,6 @@ void LoadSDKCalls(Handle gameconf)
     PrepSDKCall_SetVirtual(offset);
     PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_Plain);
     g_sdkcall_player_has_flashlight = EndPrepSDKCall();
-
-    // Check if entity is item.
-    offset = GameConfGetOffsetOrFail(gameconf, "CBaseEntity::IsBaseCombatWeapon");
-    StartPrepSDKCall(SDKCall_Entity);
-    PrepSDKCall_SetVirtual(offset);
-    PrepSDKCall_SetReturnInfo(SDKType_Bool, SDKPass_Plain);
-    g_sdkcall_is_base_combat_weapon = EndPrepSDKCall();
 
     // Get weapon ID.
     offset = GameConfGetOffsetOrFail(gameconf, "CBaseCombatWeapon::GetWeaponID");
