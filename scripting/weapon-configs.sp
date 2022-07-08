@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.8"
+#define WEAPON_CONFIGS_VERSION "1.1.9"
 
 public Plugin myinfo =
 {
@@ -18,7 +18,7 @@ public Plugin myinfo =
     author = "Ryan.",
     description = "Customize weapon speeds and behavior.",
     version = WEAPON_CONFIGS_VERSION,
-    url = "https://forums.alliedmods.net/showthread.php?p=2628691"
+    url = "https://github.com/dysphie/nmrih-weapon-configs-ex"
 };
 
 
@@ -268,6 +268,7 @@ ConVar g_sv_skillshot_damage_modifier;          // Damage multiplier when in ski
 public APLRes AskPluginLoad2(Handle myself, bool late, char[] error, int err_max)
 {
     g_plugin_loaded_late = late;
+    return APLRes_Success;
 }
 
 /**

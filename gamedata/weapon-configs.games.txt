@@ -2,86 +2,8 @@
 {
 	"#default"
 	{
-		"Keys"
-		{
-			// Jumps to our code cave
-			//
-			//      ; set eax to our code cave address
-			//      mov eax, 0xFFFFFFFF
-			//      jmp eax ; jump to the code cave!
-			//      nop
-			//      nop
-			//      nop
-			//
-			"FlareGunRadiusTrampoline" "\xB8\xFF\xFF\xFF\xFF\xFF\xE0\x90\x90\x90"
-
-			// Loads a raw hex value into the FPU
-			//
-			//      ; Load our float value from the stack
-			//      mov eax, 0xFFFFFFFF
-			//      push eax
-			//      fld dword [esp]
-			//      pop eax
-			//
-			//      ; Op-codes from original function we stomped over
-			//      lea     eax, [ebp-54h]
-			//      push    eax
-			//
-			//      ; Set eax to our return address and jump to it
-			//      mov eax, 0xFFFFFFFF
-			//      jmp eax
-			//
-			"FlareGunRadiusCodeCave" "\xB8\xFF\xFF\xFF\xFF\x50\xD9\x04\x24\x58\x8D\x45\xAC\x50\xB8\xFF\xFF\xFF\xFF\xFF\xE0"
-		}
-
-		"Addresses"
-		{
-			// Linux only: Address of flare gun's float blast radius
-			"CNMRiHFlareProjectile::FlyThink@BlastRadius"
-			{
-				"signature" "CNMRiHFlareProjectile::FlyThink"
-				"offset" "674"
-			}
-
-			// Windows only: Address of unused code that is large enough to
-			//               fit a code cave for changing flare gun's radius
-			"CodeCaveForFlareGunRadius"
-			{
-				"signature" "CodeCaveForFlareGunRadius"
-				"offset" "1"
-			}
-
-			// Windows only: Address to place trampoline to code cave.
-			"TrampolineForFlareGunRadius"
-			{
-				"signature" "CNMRiHFlareProjectile::FlyThink"
-				"windows"
-				{
-					"offset" "608"
-				}
-			}
-		}
-
 		"Offsets"
 		{
-			// Offset into FlareGunRadiusTrampoline of code cave address jump
-			"FlareGunRadiusTrampoline.CodeCaveAddress"
-			{
-				"windows" "1"
-			}
-
-			// Offset into FlareGunRadiusCodeCave that float value is stored
-			"FlareGunRadiusCodeCave.Radius"
-			{
-				"windows" "1"
-			}
-
-			// Offset into FlareGunRadiusCodeCave that return address is stored
-			"FlareGunRadiusCodeCave.ReturnAddress"
-			{
-				"windows" "15"
-			}
-
 			"IsLinux"
 			{
 				"windows" "0"
@@ -133,28 +55,21 @@
 				"linux" "63"
 			}
 
-			"CBaseEntity::IsNPC"
-			{
-				// bool ()
-				"windows" "73"
-				"linux" "74"
-			}
-
 			// ================================================================
 			// Medical Weapons
 
 			"CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal"
 			{
 				// void ()
-				"windows" "438"
-				"linux" "439"
+				"windows" "439"
+				"linux" "440"
 			}
 
 			"CNMRiH_BaseMedicalItem::ShouldUseMedicalItem"
 			{
 				// bool ()
-				"windows" "439"
-				"linux" "440"
+				"windows" "440"
+				"linux" "441"
 			}
 
 			// ================================================================
@@ -163,8 +78,8 @@
 			"CBaseSDKGrenade::EmitGrenade"
 			{
 				//void (Vector,QAngle,Vector,Vector,CBasePlayer *,CWeaponSDKBase *)
-				"windows" "440"
-				"linux" "441"
+				"windows" "441"
+				"linux" "442"
 			}
 
 			// ================================================================
@@ -229,126 +144,126 @@
 			"CNMRiH_WeaponBase::GetShoveDamage"
 			{
 				// int (const CGameTrace &)
-				"windows" "397"
-				"linux" "398"
+				"windows" "395"
+				"linux" "396"
 			}
 
 			"CNMRiH_MeleeBase::GetThrownDamage"
 			{
 				// int (CGameTrace  const&)
-				"windows" "398"
-				"linux" "399"
+				"windows" "396"
+				"linux" "397"
 			}
 
 			"CNMRiH_WeaponBase::TurnOnIronsights"
 			{
 				// void ()
-				"windows" "407"
-				"linux" "409"
+				"windows" "406"
+				"linux" "407"
 			}
 
 			"CNMRiH_WeaponBase::TurnOffIronsights"
 			{
 				// void ()
-				"windows" "408"
-				"linux" "410"
+				"windows" "407"
+				"linux" "408"
 			}
 
 			"CNMRiH_WeaponBase::ToggleFlashlight"
 			{
 				// void ()
-				"windows" "416"
-				"linux" "417"
+				"windows" "414"
+				"linux" "415"
 			}
 
 			"CNMRiH_WeaponBase::IsFlashlightOn"
 			{
 				// bool ()
-				"windows" "417"
-				"linux" "418"
+				"windows" "415"
+				"linux" "416"
 			}
 
 			"CNMRiH_WeaponBase::IsFlashlightAllowed"
 			{
 				// bool ()
-				"windows" "418"
-				"linux" "419"
+				"windows" "416"
+				"linux" "417"
 			}
 
 			"CNMRiH_WeaponBase::StartShove"
+			{
+				// void ()
+				"windows" "417"
+				"linux" "418"
+			}
+
+			"CNMRiH_WeaponBase::DoShove"
 			{
 				// void ()
 				"windows" "419"
 				"linux" "420"
 			}
 
-			"CNMRiH_WeaponBase::DoShove"
-			{
-				// void ()
-				"windows" "421"
-				"linux" "422"
-			}
-
 			"CNMRiH_WeaponBase::CheckAmmo"
 			{
-				"windows" "422"
-				"linux" "423"
+				"windows" "420"
+				"linux" "421"
 			}
 
 			"CNMRiH_WeaponBase::GetExtraShoveDelay"
 			{
 				// float ()
-				"windows" "433"
-				"linux" "434"
+				"windows" "432"
+				"linux" "433"
 			}
 
 			"CNMRiH_MeleeBase::QuickAttack"
 			{
 				// void ()
-				"windows" "436"
-				"linux" "437"
+				"windows" "437"
+				"linux" "438"
 			}
 
 			"CNMRiH_MeleeBase::DoMeleeSwing"
 			{
 				// void (int)
-				"windows" "437"
-				"linux" "438"
+				"windows" "438"
+				"linux" "439"
 			}
 
 			"CNMRiH_MeleeBase::ChargeBash"
 			{
 				// void ()
-				"windows" "438"
-				"linux" "439"
+				"windows" "439"
+				"linux" "440"
 			}
 
 			"CNMRiH_MeleeBase::FinishBash"
 			{
 				// void (bool)
-				"windows" "439"
-				"linux" "440"
+				"windows" "440"
+				"linux" "441"
 			}
 
 			"CNMRiH_MeleeBase::GetMeleeDamage"
 			{
 				// int (CBaseEntity *, int)
-				"windows" "442"
-				"linux" "443"
+				"windows" "443"
+				"linux" "444"
 			}
 
 			"CNMRiH_BaseTool::EndSecondary"
 			{
 				// void
-				"windows" "448"
-				"linux" "449"
+				"windows" "449"
+				"linux" "450"
 			}
 
 			"CNMRiH_BaseTool::BeginSecondary"
 			{
 				// void (CNMRiH_Trigger_ProgressWeapon *)
-				"windows" "449"
-				"linux" "450"
+				"windows" "450"
+				"linux" "451"
 			}
 
 			// ================================================================
@@ -388,20 +303,6 @@
 
 		"Signatures"
 		{
-			"CodeCaveForFlareGunRadius"
-			{
-				// Looks for alignment bytes after a function.
-				"library" "server"
-				"windows" "\xC3\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC\xCC"
-			}
-
-			"CNMRiHFlareProjectile::FlyThink" 
-			{
-				"library" "server"
-				"linux" "@_ZN21CNMRiHFlareProjectile8FlyThinkEv"
-				"windows" "\x53\x8B\xDC\x83\xEC\x08\x83\xE4\xF0\x83\xC4\x04\x55\x8B\x6B\x04\x89\x6C\x24\x04\x8B\xEC\xA1\x2A\x2A\x2A\x2A\x81\xEC\x68\x03\x00\x00" 
-			}
-
 			"CNMRiH_Player::Weapon_PickedUp"
 			{
 				// void (CBaseCombatWeapon *)
@@ -425,7 +326,7 @@
 				"linux" "@_ZN17CNMRiH_WeaponBase24IsSkillshotModeAvailableEv"
 				// Ryan: TODO: It's a little more complicated for Windows.
 
-				"windows" "\x56\x57\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x85\xF6\x74\x2A\x8B\x16\x8B\xCE\x8B\x92\x4C\x01\x00\x00\xFF\xD2\x84\xC0\x74\x2A\x6A\x00\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x00\x56\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x83\xC4\x14\x85\xF6\x74\x2A\x8B\x17"
+				"windows" "\x56\x57\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x85\xF6\x74\x2A\x8B\x16\x8B\xCE\x8B\x92\x4C\x01\x00\x00\xFF\xD2\x84\xC0\x74\x2A\x6A\x00\x68\x2A\x2A\x2A\x2A\x68\x2A\x2A\x2A\x2A\x6A\x00\x56\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x83\xC4\x14\x85\xF6\x74\x2A\x8B\x17\x8B\xCF\x8B\x92\x64\x06\x00\x00"
 			}
 
 			"CNMRiH_WeaponBase::Unload"
@@ -433,7 +334,7 @@
 				// void ()
 				"library" "server"
 				"linux" "@_ZN17CNMRiH_WeaponBase6UnloadEv"
-				"windows" "\x55\x8B\xEC\x51\x56\x57\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x85\xF6\x0F\x84\x2A\x2A\x2A\x2A\x8B\x16"
+				"windows" "\x55\x8B\xEC\x51\x56\x57\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x85\xF6\x0F\x84\x2A\x2A\x2A\x2A\x8B\x16\x8B\xCE\x8B\x92\x4C\x01\x00\x00\xFF\xD2\x84\xC0\x0F\x84\x2A\x2A\x2A\x2A\x53"
 			}
 
 			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
