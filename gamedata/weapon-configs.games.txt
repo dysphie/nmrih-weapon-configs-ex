@@ -1,6 +1,6 @@
 "Games"
 {
-	"#default"
+	"nmrih"
 	{
 		"Offsets"
 		{
@@ -340,7 +340,7 @@
 			"CNMRiH_MeleeBase::DrainMeleeSwingStamina"
 			{
 				"library" "server"
-				"linux" "@_ZN16CNMRiH_MeleeBase22DrainMeleeSwingStaminaEv"
+				"linux" "@_ZNK16CNMRiH_MeleeBase22DrainMeleeSwingStaminaEv"
 				"windows" "\x56\x57\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\xF8\x85\xFF\x74\x2A\x8B\xCE"
 			}
 
@@ -348,7 +348,7 @@
 			{
 				// bool ()
 				"library" "server"
-				"linux" "@_ZN16CNMRiH_MeleeBase19ShouldMeleePushbackEv"
+				"linux"	"@_ZNK16CNMRiH_MeleeBase19ShouldMeleePushbackEv"
 				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\xC7\x45\xFC\x00\x00\x00\x00\xE8\x2A\x2A\x2A\x2A"
 			}
 		}
