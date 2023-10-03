@@ -61,15 +61,15 @@
 			"CNMRiH_BaseMedicalItem::ApplyMedicalItem_Internal"
 			{
 				// void ()
-				"windows" "440"
-				"linux" "441"
+				"windows" "439"
+				"linux" "440"
 			}
 
 			"CNMRiH_BaseMedicalItem::ShouldUseMedicalItem"
 			{
 				// bool ()
-				"windows" "441"
-				"linux" "442"
+				"windows" "440"
+				"linux" "441"
 			}
 
 			// ================================================================
@@ -78,8 +78,8 @@
 			"CBaseSDKGrenade::EmitGrenade"
 			{
 				//void (Vector,QAngle,Vector,Vector,CBasePlayer *,CWeaponSDKBase *)
-				"windows" "442"
-				"linux" "443"
+				"windows" "441"
+				"linux" "442"
 			}
 
 			// ================================================================
@@ -213,57 +213,57 @@
 			"CNMRiH_WeaponBase::GetExtraShoveDelay"
 			{
 				// float ()
-				"windows" "432"
-				"linux" "433"
+				"windows" "431"
+				"linux" "432"
 			}
 
 			"CNMRiH_MeleeBase::QuickAttack"
 			{
 				// void ()
-				"windows" "438"
-				"linux" "439"
+				"windows" "437"
+				"linux" "438"
 			}
 
-			"CNMRiH_MeleeBase::DoMeleeSwing"
+			"CNMRiH_MeleeBase::DoMeleeBash"
 			{
 				// void (int)
-				"windows" "439"
-				"linux" "440"
+				"windows" "438"
+				"linux" "439"
 			}
 
 			"CNMRiH_MeleeBase::ChargeBash"
 			{
 				// void ()
-				"windows" "440"
-				"linux" "441"
+				"windows" "439"
+				"linux" "440"
 			}
 
 			"CNMRiH_MeleeBase::FinishBash"
 			{
 				// void (bool)
-				"windows" "441"
-				"linux" "442"
+				"windows" "440"
+				"linux" "441"
 			}
 
 			"CNMRiH_MeleeBase::GetMeleeDamage"
 			{
 				// int (CBaseEntity *, int)
-				"windows" "444"
-				"linux" "445"
+				"windows" "443"
+				"linux" "444"
 			}
 
 			"CNMRiH_BaseTool::EndSecondary"
 			{
 				// void
-				"windows" "450"
-				"linux" "451"
+				"windows" "449"
+				"linux" "450"
 			}
 
 			"CNMRiH_BaseTool::BeginSecondary"
 			{
 				// void (CNMRiH_Trigger_ProgressWeapon *)
-				"windows" "451"
-				"linux" "452"
+				"windows" "450"
+				"linux" "451"
 			}
 
 			// ================================================================
@@ -308,7 +308,7 @@
 				// void (CBaseCombatWeapon *)
 				"library" "server"
 				"linux" "@_ZN13CNMRiH_Player15Weapon_PickedUpEP17CBaseCombatWeapon"
-				"windows" "\x55\x8B\xEC\x81\xEC\x10\x01\x00\x00\x53\x57"
+				"windows" "\x55\x8B\xEC\x81\xEC\x10\x01\x00\x00\x53\x57\x8B\x7D\x08\x8B\xD9\x85\xFF"
 			}
 
 			"CNMRiH_WeaponBase::AllowsSuicide"
@@ -340,7 +340,7 @@
 			{
 				"library" "server"
 				"linux" "@_ZNK16CNMRiH_MeleeBase22DrainMeleeSwingStaminaEv"
-				"windows" "\x56\x57\x8B\xF1\xE8\x2A\x2A\x2A\x2A\x8B\xF8\x85\xFF\x74\x2A\x8B\xCE"
+				"windows" "\x56\x57\x8B\xF9\xE8\x2A\x2A\x2A\x2A\x8B\xF0\x85\xF6\x74\x2A\x8B\x16\x8B\xCE\x8B\x92\x4C\x01\x00\x00\xFF\xD2\x84\xC0\x74\x2A\x8B\xCF\xE8\x2A\x2A\x2A\x2A\xF3\x0F\x10\x15"
 			}
 
 			"CNMRiH_MeleeBase::ShouldMeleePushback"
@@ -348,7 +348,7 @@
 				// bool ()
 				"library" "server"
 				"linux"	"@_ZNK16CNMRiH_MeleeBase19ShouldMeleePushbackEv"
-				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\xC7\x45\xFC\x00\x00\x00\x00\xE8\x2A\x2A\x2A\x2A"
+				"windows" "\x55\x8B\xEC\x51\x56\x8B\xF1\xC7\x45\xFC\x00\x00\x00\x00\xE8"
 			}
 		}
 
@@ -531,9 +531,9 @@
 				}
 			}
 
-			"CNMRiH_MeleeBase::DoMeleeSwing"
+			"CNMRiH_MeleeBase::DoMeleeBash"
 			{
-				"offset" "CNMRiH_MeleeBase::DoMeleeSwing"
+				"offset" "CNMRiH_MeleeBase::DoMeleeBash"
 				"callconv" "thiscall"
 				"hooktype" "entity"
 				"return" "void"

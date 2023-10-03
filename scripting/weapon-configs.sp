@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.12"
+#define WEAPON_CONFIGS_VERSION "1.1.13"
 
 public Plugin myinfo =
 {
@@ -2210,7 +2210,7 @@ void LoadDHooks(GameData gameconf)
     // Change stamina cost of the fists (only necessary on Windows).
     if (!g_is_linux_server)
     {
-        g_dhook_fists_stamina_cost = DHookCreateFromConfOrFail(gameconf, "CNMRiH_MeleeBase::DoMeleeSwing");
+        g_dhook_fists_stamina_cost = DHookCreateFromConfOrFail(gameconf, "CNMRiH_MeleeBase::DoMeleeBash");
     }
 }
 
