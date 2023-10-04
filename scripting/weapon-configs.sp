@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.13"
+#define WEAPON_CONFIGS_VERSION "1.1.14"
 
 public Plugin myinfo =
 {
@@ -751,7 +751,7 @@ MRESReturn DHook_ChangeWeaponCapacity(int weapon, Handle return_handle)
  * Change melee weapon's damage.
  *
  * Native signature:
- * int CNMRiH_MeleeBase::GetMeleeDamage(CBaseEntity *, int)
+ * float CNMRiH_MeleeBase::GetMeleeDamage(CBaseEntity *, int)
  */
 MRESReturn DHook_MeleeDamage(int melee, Handle return_handle, Handle params)
 {
@@ -1380,9 +1380,10 @@ MRESReturn ChangeDamageUsingHitGroup(int weapon_id, Handle return_handle,
     float damage = GetWeaponDamageForHitgroup(weapon_id, hitgroup,
         normal_damage, headshot_damage);
 
+
     if (damage >= 0.0)
     {
-        DHookSetReturn(return_handle, RoundToNearest(damage));
+        DHookSetReturn(return_handle, damage);
         result = MRES_Override;
     }
 

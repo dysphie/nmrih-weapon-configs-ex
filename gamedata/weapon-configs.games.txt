@@ -247,7 +247,7 @@
 
 			"CNMRiH_MeleeBase::GetMeleeDamage"
 			{
-				// int (CBaseEntity *, int)
+				// float (CBaseEntity *, int)
 				"windows" "443"
 				"linux" "444"
 			}
@@ -580,7 +580,7 @@
 				"offset" "CNMRiH_MeleeBase::GetMeleeDamage"
 				"callconv" "thiscall"
 				"hooktype" "entity"
-				"return" "int"
+				"return" "float"
 				"this" "entity"
 				"arguments"
 				{
