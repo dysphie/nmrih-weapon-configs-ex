@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.14"
+#define WEAPON_CONFIGS_VERSION "1.1.15"
 
 public Plugin myinfo =
 {

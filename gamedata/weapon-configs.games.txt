@@ -316,7 +316,7 @@
 				// bool ()
 				"library" "server"
 				"linux" "@_ZNK17CNMRiH_WeaponBase13AllowsSuicideEv"
-				"windows" "\xE8\x2A\x2A\x2A\x2A\x8A\x80\x50\x0A\x00\x00"
+				"windows" "\xE8\x2A\x2A\x2A\x2A\x8A\x80\xD0\x07\x00\x00"
 			}
 
 			"CNMRiH_WeaponBase::IsSkillshotModeAvailable"
