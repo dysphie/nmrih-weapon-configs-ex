@@ -338,7 +338,7 @@ public void OnPluginEnd()
  */
 Action ConCommand_ReloadConfigs(int client, int args)
 {
-    char map[1];
+    char map[2];
     if (!GetCurrentMap(map, sizeof(map)))
     {
         ReplyToCommand(client, "Cannot reload weapon configs when no map is running");
