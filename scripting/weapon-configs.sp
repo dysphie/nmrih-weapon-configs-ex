@@ -95,6 +95,9 @@ enum eWeaponOption:
     // Whether weapon can enter skillshot mode. Currently Linux only.
     WEAPON_CAN_SKILLSHOT,
 
+    // Whether weapon has a unique draw animation on first draw.
+    WEAPON_ACT_FIRST_DRAW,
+
     // Chance for melee to pushback zombie.
     WEAPON_PUSHBACK,
     WEAPON_PUSHBACK_CHARGED,
@@ -1174,6 +1177,13 @@ Action Hook_PlayerWeaponSwitch(int client, int weapon)
         g_player_weapon_type[client] = WEAPON_TYPE_OTHER;
     }
 
+    // Override first draw activity
+    int id = GetWeaponID(weapon);
+    if (id >= 0 && id < WEAPON_MAX && g_weapon_options[id][WEAPON_ACT_FIRST_DRAW] == 0)
+    {
+        SetEntProp(weapon, Prop_Send, "m_bDeployedOnce", true);
+    }
+
     return Plugin_Continue;
 }
 
@@ -2044,6 +2054,7 @@ void ParseWeaponKeyValues(KeyValues kv)
                 g_weapon_options[id][WEAPON_SHOVE_COOLDOWN]     = GetOption(kv, "shove_cooldown");
                 g_weapon_options[id][WEAPON_RADIUS]             = GetOption(kv, "radius");
                 g_weapon_options[id][WEAPON_FUSE]               = GetOption(kv, "fuse");
+                g_weapon_options[id][WEAPON_ACT_FIRST_DRAW]     = GetOption(kv, "first_draw_animation");
 
                 if (StrEqual(weapon_name, "tool_flare_gun"))
                 {
