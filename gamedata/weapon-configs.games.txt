@@ -10,6 +10,13 @@
 				"linux" "1"
 			}
 
+			"CNMRiH_BaseBow::m_flMinFireTime"
+			{
+				// float
+				"windows"	"2164"
+				"linux"		"2188"
+			}
+
 			"CGameTrace::hitgroup"
 			{
 				// int

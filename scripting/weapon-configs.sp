@@ -213,6 +213,7 @@ bool g_player_maglite_on[MAXPLAYERS + 1];
 eWeaponType g_player_weapon_type[MAXPLAYERS + 1] = { WEAPON_TYPE_OTHER, ... };
 float g_player_stamina_pre_call[MAXPLAYERS + 1] = { 0.0, ... };
 
+int g_offset_bow_release_time;
 int g_offset_takedamageinfo_inflictor;
 int g_offset_takedamageinfo_attacker;
 int g_offset_takedamageinfo_damage;
@@ -286,6 +287,7 @@ public void OnPluginStart()
         SetFailState("Failed to load game data.");
 
     g_is_linux_server = GameConfGetOffsetOrFail(gameconf, "IsLinux") != 0;
+    g_offset_bow_release_time = GameConfGetOffsetOrFail(gameconf, "CNMRiH_BaseBow::m_flMinFireTime");
     g_offset_takedamageinfo_inflictor = GameConfGetOffsetOrFail(gameconf, "CTakeDamageInfo::m_hInflictor");
     g_offset_takedamageinfo_attacker = GameConfGetOffsetOrFail(gameconf, "CTakeDamageInfo::m_hAttacker");
     g_offset_takedamageinfo_damage = GameConfGetOffsetOrFail(gameconf, "CTakeDamageInfo::m_flDamage");
@@ -333,6 +335,13 @@ public void OnPluginEnd()
  */
 Action ConCommand_ReloadConfigs(int client, int args)
 {
+    char map[1];
+    if (!GetCurrentMap(map, sizeof(map)))
+    {
+        ReplyToCommand(client, "Cannot reload weapon configs when no map is running");
+        return Plugin_Handled;
+    }
+
     LoadWeaponOptions(true);
     return Plugin_Handled;
 }
@@ -1496,30 +1505,30 @@ void ChangeBowSpeed(int client, int bow, float rate, float delay, bool start_of_
     }
 
     // Change animation speed.
-    // SetEntPropFloat(bow, Prop_Send, "m_flPlaybackRate", rate);
-    // int view_model = GetEntPropEnt(client, Prop_Send, "m_hViewModel");
-    // if (view_model != -1)
-    // {
-    //     SetEntPropFloat(view_model, Prop_Send, "m_flPlaybackRate", rate);
-    // }
+    SetEntPropFloat(bow, Prop_Send, "m_flPlaybackRate", rate);
+    int view_model = GetEntPropEnt(client, Prop_Send, "m_hViewModel");
+    if (view_model != -1)
+    {
+        SetEntPropFloat(view_model, Prop_Send, "m_flPlaybackRate", rate);
+    }
 
-    // if (start_of_attack)
-    // {
-    //     float normal_release = GetEntDataFloat(bow, g_offset_bow_release_time);
-    //     float new_release = normal_release;
+    if (start_of_attack)
+    {
+        float normal_release = GetEntDataFloat(bow, g_offset_bow_release_time);
+        float new_release = normal_release;
 
-    //     if (delay >= 0.0)
-    //     {
-    //         new_release = now + delay;
-    //     }
-    //     else if (rate != 1.0)
-    //     {
-    //         // Sync arrow's release time to animation.
-    //         new_release = now + ((normal_release - now) / rate);
-    //     }
+        if (delay >= 0.0)
+        {
+            new_release = now + delay;
+        }
+        else if (rate != 1.0)
+        {
+            // Sync arrow's release time to animation.
+            new_release = now + ((normal_release - now) / rate);
+        }
 
-    //     SetEntDataFloat(bow, g_offset_bow_release_time, new_release);
-    // }
+        SetEntDataFloat(bow, g_offset_bow_release_time, new_release);
+    }
 
     int seq = GetEntSequence(bow);
     if (seq == SEQUENCE_BOW_FIRE || seq == SEQUENCE_BOW_FIRE_LAST)
