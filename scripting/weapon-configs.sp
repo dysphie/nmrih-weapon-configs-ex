@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.16"
+#define WEAPON_CONFIGS_VERSION "1.1.17"
 
 public Plugin myinfo =
 {
@@ -261,6 +261,8 @@ ConVar g_cvar_weapon_config;
 
 ConVar g_sv_flare_gun_explode_damage;           // Flare gun damage is implemented via existing cvar.
 ConVar g_sv_skillshot_damage_modifier;          // Damage multiplier when in skillshot mode.
+ConVar g_sv_max_charge_length;                  // Maximum time melee attacks can be charged for.
+ConVar g_sv_melee_dmg_per_sec;                  // Multiple of base melee damage to do per second of charge
 
 /**
  * Check if the plugin is loading late.
@@ -299,6 +301,8 @@ public void OnPluginStart()
     g_default_flare_gun_damage = g_sv_flare_gun_explode_damage.FloatValue;
 
     g_sv_skillshot_damage_modifier = FindConVar("sv_skillshot_damage_modifier");
+    g_sv_max_charge_length = FindConVar("sv_max_charge_length");
+    g_sv_melee_dmg_per_sec = FindConVar("sv_melee_dmg_per_sec");
 
     g_cvar_weapon_configs_enabled = CreateConVar("sm_weapon_configs_enabled", "1",
         "1 = Enable plugin. 0 = Disable plugin.");
@@ -311,6 +315,8 @@ public void OnPluginStart()
     CreateConVar("sm_weapon_config_version", WEAPON_CONFIGS_VERSION,
         "Weapon Configs plugin. By Ryan.",
         FCVAR_NOTIFY | FCVAR_SPONLY | FCVAR_DONTRECORD | FCVAR_REPLICATED);
+
+    RegAdminCmd("sm_reload_weapon_configs", ConCommand_ReloadConfigs, ADMFLAG_GENERIC);
 }
 
 /**
@@ -320,6 +326,15 @@ public void OnPluginEnd()
 {
     // Restore original flare gun damage.
     SetFlareGunDamage(g_default_flare_gun_damage);
+}
+
+/**
+ * Refresh weapon options on demand.
+ */
+Action ConCommand_ReloadConfigs(int client, int args)
+{
+    LoadWeaponOptions(true);
+    return Plugin_Handled;
 }
 
 /**
@@ -765,10 +780,30 @@ MRESReturn DHook_MeleeDamage(int melee, Handle return_handle, Handle params)
         int hitgroup = DHookGetParam(params, PARAM_HITGROUP);
 
         result = ChangeDamageUsingHitGroup(id, return_handle, hitgroup,
-            WEAPON_DAMAGE_LO, WEAPON_DAMAGE_HEADSHOT_LO);
+            WEAPON_DAMAGE_LO, WEAPON_DAMAGE_HEADSHOT_LO, melee);
     }
 
     return result;
+}
+
+/**
+ * Adjust melee weapon's damage based on charge length.
+ */
+void ScaleMeleeDamage(int melee, float& damage)
+{
+    float chargeLength = GetEntPropFloat(melee, Prop_Send, "m_flLastChargeLength");
+    if (chargeLength <= 0.0)
+    {
+        return;
+    }
+
+    float maxChargeLength = g_sv_max_charge_length.FloatValue;
+    if (chargeLength > maxChargeLength)
+    {
+        chargeLength = maxChargeLength;
+    }
+
+    damage = g_sv_melee_dmg_per_sec.FloatValue * damage * chargeLength + damage;
 }
 
 /**
@@ -1373,21 +1408,23 @@ MRESReturn ChangeDamageUsingGameTrace(int weapon, Handle return_handle, Handle p
  * Change the amount of damage dealt according to the hitgroup hit.
  */
 MRESReturn ChangeDamageUsingHitGroup(int weapon_id, Handle return_handle,
-    int hitgroup, eWeaponOption normal_damage, eWeaponOption headshot_damage)
+    int hitgroup, eWeaponOption normal_damage, eWeaponOption headshot_damage, int melee_idx = -1)
 {
-    MRESReturn result = MRES_Ignored;
-
     float damage = GetWeaponDamageForHitgroup(weapon_id, hitgroup,
         normal_damage, headshot_damage);
 
-
-    if (damage >= 0.0)
+    if (damage < 0.0)
     {
-        DHookSetReturn(return_handle, damage);
-        result = MRES_Override;
+        return MRES_Ignored;
     }
 
-    return result;
+    if (melee_idx != -1)
+    {
+        ScaleMeleeDamage(melee_idx, damage);
+    }
+
+    DHookSetReturn(return_handle, damage);
+    return MRES_Override;
 }
 
 /**
