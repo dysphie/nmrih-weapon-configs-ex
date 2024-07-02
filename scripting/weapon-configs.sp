@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.17"
+#define WEAPON_CONFIGS_VERSION "1.2.0"
 
 public Plugin myinfo =
 {
@@ -216,7 +216,7 @@ bool g_player_maglite_on[MAXPLAYERS + 1];
 eWeaponType g_player_weapon_type[MAXPLAYERS + 1] = { WEAPON_TYPE_OTHER, ... };
 float g_player_stamina_pre_call[MAXPLAYERS + 1] = { 0.0, ... };
 
-int g_offset_bow_release_time;
+int g_offset_bow_release_time;              // Game time that bow's arrow can be shot. Offset into CNMRiH_BaseBow.    
 int g_offset_takedamageinfo_inflictor;
 int g_offset_takedamageinfo_attacker;
 int g_offset_takedamageinfo_damage;
@@ -247,7 +247,7 @@ Handle g_dhook_bow_shoot_speed;                 // Change animation speed of bow
 Handle g_dhook_weapon_capacity;                 // Change amount of ammo the weapon can hold.
 Handle g_dhook_weapon_maglite_speed;            // Change animation speed of maglite when used with another weapon.
 Handle g_dhook_weapon_pre_maglite_toggle;       // Store state of player's flashlight immediately before it is toggled.
-// Handle g_dhook_weapon_shove_cooldown;           // Change delay between shoves.
+Handle g_dhook_weapon_shove_cooldown;           // Change delay between shoves.
 Handle g_dhook_weapon_shove_cost;               // Change cost of shove.
 Handle g_dhook_weapon_shove_damage;             // Change weapon shove damage.
 Handle g_dhook_weapon_shove_speed;              // Change animation speed of shove.
@@ -941,6 +941,35 @@ MRESReturn DHook_BowShootSpeed(int bow)
     return MRES_Ignored;
 }
 
+
+/**
+ * Change delay between shoves.
+ *
+ * Native signature:
+ * void CNMRiH_WeaponBase::SetBashActionTime(float, bool)
+ */
+public MRESReturn DHook_ChangeWeaponShoveCooldown(int weapon, Handle params)
+{
+    // Change shove cooldown.
+    if (g_cvar_weapon_configs_enabled.BoolValue &&
+        IsValidEdict(weapon) &&
+        IsBaseCombatWeapon(weapon))
+    {
+        int id = GetWeaponID(weapon);
+        if (id >= 0 && id < WEAPON_MAX)
+        {
+            float cooldown = g_weapon_options[id][WEAPON_SHOVE_COOLDOWN];
+            if (cooldown >= 0.0)
+            {
+                float now = GetGameTime();
+                SetWeaponNextShoveTime(weapon, now + cooldown);
+            }
+        }
+    }
+
+    return MRES_Ignored;
+}
+
 /**
  * Store the player's current stamina amount.
  *
@@ -1126,6 +1155,41 @@ MRESReturn Detour_CanSuicidePost(int weapon, Handle return_handle)
 }
 
 /**
+ * This callback is necessary to create a post-detour.
+ *
+ * Native signature:
+ * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
+ */
+public MRESReturn Detour_CanSkillshotPre(int weapon, Handle return_handle)
+{
+    return MRES_Ignored;
+}
+
+/**
+ * Set whether a weapon can enter skillshot mode.
+ *
+ * Native signature:
+ * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
+ */
+public MRESReturn Detour_CanSkillshotPost(int weapon, Handle return_handle)
+{
+    MRESReturn result = MRES_Ignored;
+
+    int id = GetWeaponID(weapon);
+    if (id >= 0 && id < WEAPON_MAX)
+    {
+        float skillshot = g_weapon_options[id][WEAPON_CAN_SKILLSHOT];
+        if (skillshot >= 0.0)
+        {
+            DHookSetReturn(return_handle, skillshot > 0.0);
+            result = MRES_Override;
+        }
+    }
+
+    return result;
+}
+
+/**
  * Change grenade's throw animation speed.
  */
 void OnFrame_GrenadeFinishThrowSpeed(int grenade_ref)
@@ -1177,14 +1241,24 @@ Action Hook_PlayerWeaponSwitch(int client, int weapon)
         g_player_weapon_type[client] = WEAPON_TYPE_OTHER;
     }
 
+    OverrideFirstDrawActivity(weapon);
+
+    return Plugin_Continue;
+}
+
+void OverrideFirstDrawActivity(int weapon)
+{
+    if (!g_cvar_weapon_configs_enabled.BoolValue)
+    {
+        return;
+    } 
+
     // Override first draw activity
     int id = GetWeaponID(weapon);
     if (id >= 0 && id < WEAPON_MAX && g_weapon_options[id][WEAPON_ACT_FIRST_DRAW] == 0)
     {
         SetEntProp(weapon, Prop_Send, "m_bDeployedOnce", true);
     }
-
-    return Plugin_Continue;
 }
 
 /**
@@ -1577,41 +1651,6 @@ void ChangeBowSpeed(int client, int bow, float rate, float delay, bool start_of_
 }
 
 /**
- * This callback is necessary to create a post-detour.
- *
- * Native signature:
- * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
- */
-public MRESReturn Detour_CanSkillshotPre(int weapon, Handle return_handle)
-{
-    return MRES_Ignored;
-}
-
-/**
- * Set whether a weapon can enter skillshot mode.
- *
- * Native signature:
- * bool CNMRiH_WeaponBase::IsSkillshotModeAvailable()
- */
-public MRESReturn Detour_CanSkillshotPost(int weapon, Handle return_handle)
-{
-    MRESReturn result = MRES_Ignored;
-
-    int id = GetWeaponID(weapon);
-    if (id >= 0 && id < WEAPON_MAX)
-    {
-        float skillshot = g_weapon_options[id][WEAPON_CAN_SKILLSHOT];
-        if (skillshot >= 0.0)
-        {
-            DHookSetReturn(return_handle, skillshot > 0.0);
-            result = MRES_Override;
-        }
-    }
-
-    return result;
-}
-
-/**
  * Change animation speed of maglite on/off.
  *
  * @param weapon    Weapon whose speed will be changed.
@@ -1938,7 +1977,7 @@ void HandleNewEntity(int entity, const char[] classname)
         DHookEntity(g_dhook_weapon_thrown_damage, DHOOK_POST, entity, N, DHook_WeaponThrowDamage);
 
         DHookEntity(g_dhook_weapon_capacity, DHOOK_POST, entity, N, DHook_ChangeWeaponCapacity);
-        // DHookEntity(g_dhook_weapon_shove_cooldown, DHOOK_PRE, entity, N, DHook_ChangeWeaponShoveCooldown);
+        DHookEntity(g_dhook_weapon_shove_cooldown, DHOOK_POST, entity, N, DHook_ChangeWeaponShoveCooldown);
         DHookEntity(g_dhook_weapon_shove_cost, DHOOK_PRE, entity, N, DHook_ChangeWeaponShoveCostPre);
         DHookEntity(g_dhook_weapon_shove_cost, DHOOK_POST, entity, N, DHook_ChangeWeaponShoveCostPost);
         DHookEntity(g_dhook_weapon_shove_speed, DHOOK_POST, entity, N, DHook_WeaponShoveSpeed);
@@ -2232,7 +2271,7 @@ void LoadDHooks(GameData gameconf)
     g_dhook_weapon_shove_speed = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::StartShove");
 
     // Change delay between shoves.
-    // g_dhook_weapon_shove_cooldown = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::SetBashActionTime");
+    g_dhook_weapon_shove_cooldown = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::DoShove");
 
     // Change stamina cost of weapon shoves.
     g_dhook_weapon_shove_cost = DHookCreateFromConfOrFail(gameconf, "CNMRiH_WeaponBase::DoShove");
@@ -2505,6 +2544,15 @@ float GetWeaponNextShoveTime(int weapon)
 {
     return GetEntPropFloat(weapon, Prop_Send, "m_flNextBashAttack");
 }
+
+/**
+ * Set minimum game time when weapon can shove again.
+ */
+void SetWeaponNextShoveTime(int weapon, float time)
+{
+    SetEntPropFloat(weapon, Prop_Send, "m_flNextBashAttack", time);
+}
+
 
 /**
  * Change player's stamina.

@@ -481,27 +481,7 @@
 					}
 				}
 			}
-
-			// "CNMRiH_WeaponBase::SetBashActionTime"
-			// {
-			// 	"offset" "CNMRiH_WeaponBase::SetBashActionTime"
-			// 	"callconv" "thiscall"
-			// 	"hooktype" "entity"
-			// 	"return" "void"
-			// 	"this" "entity"
-			// 	"arguments"
-			// 	{
-			// 		"time"
-			// 		{
-			// 			"type" "float"
-			// 		}
-			// 		"unknown"
-			// 		{
-			// 			"type" "bool"
-			// 		}
-			// 	}
-			// }
-
+			
 			"CNMRiH_WeaponBase::DoShove"
 			{
 				"offset" "CNMRiH_WeaponBase::DoShove"
