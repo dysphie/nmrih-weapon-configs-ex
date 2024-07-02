@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.1.15"
+#define WEAPON_CONFIGS_VERSION "1.1.16"
 
 public Plugin myinfo =
 {
@@ -947,7 +947,7 @@ MRESReturn DHook_GrenadeStartThrowSpeed(int grenade)
  * Change grenade's throw animation speed to use "release" rate.
  *
  * Native signature:
- * void CWeaponGrenade::EmitGrenade(Vector,QAngle,Vector,Vector,CBasePlayer *,CWeaponSDKBase *)
+ * void CWeaponGrenade::EmitGrenade(Vector *,QAngle *,Vector *,Vector *,CBasePlayer *,CWeaponSDKBase *)
  */
 MRESReturn DHook_GrenadeFinishThrowSpeed(int grenade)
 {

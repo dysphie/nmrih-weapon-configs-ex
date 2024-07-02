@@ -642,23 +642,19 @@
 				{
 					"source"
 					{
-						"type" "object" // Vector
-						"size" "12"
+						"type" "vectorptr" // Vector
 					}
 					"angles"
 					{
-						"type" "object" // QAngle
-						"size" "12"
+						"type" "vectorptr" // QAngle
 					}
 					"velocity"
 					{
-						"type" "object" // Vector
-						"size" "12"
+						"type" "vectorptr" // Vector
 					}
 					"angularImpulse"
 					{
-						"type" "object" // AngularImpulse
-						"size" "12"
+						"type" "vectorptr" // AngularImpulse
 					}
 					"player"
 					{
