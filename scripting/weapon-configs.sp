@@ -10,7 +10,7 @@
 #pragma semicolon 1
 #pragma newdecls required
 
-#define WEAPON_CONFIGS_VERSION "1.2.0"
+#define WEAPON_CONFIGS_VERSION "1.2.1"
 
 public Plugin myinfo =
 {
@@ -803,7 +803,7 @@ MRESReturn DHook_MeleeDamage(int melee, Handle return_handle, Handle params)
  */
 void ScaleMeleeDamage(int melee, float& damage)
 {
-    float chargeLength = GetEntPropFloat(melee, Prop_Send, "m_flLastChargeLength");
+    float chargeLength = GetWeaponLastChargeLength(melee);
     if (chargeLength <= 0.0)
     {
         return;
@@ -1102,20 +1102,40 @@ MRESReturn Detour_MeleePushbackPost(int melee, Handle return_handle)
  */
 MRESReturn Detour_MeleeStaminaPre(int weapon)
 {
-    StoreCurrentStamina(weapon);
-    return MRES_Ignored;
-}
+    int owner = GetEntOwner(weapon);
+    if (owner < 1 || owner > MaxClients) 
+    {
+        return MRES_Ignored;
+    }
 
-/**
- * Use custom melee stamina cost.
- *
- * Native signature:
- * void CNMRiH_MeleeBase::DrainMeleeSwingStamina(void)
- */
-MRESReturn Detour_MeleeStaminaPost(int weapon)
-{
-    ChangeStaminaCost(weapon, WEAPON_STAMINA_MELEE);
-    return MRES_Ignored;
+    int id = GetWeaponID(weapon);
+    if (id < 0 || id >= WEAPON_MAX) 
+    {
+        return MRES_Ignored;
+    }
+
+    float cost = g_weapon_options[id][WEAPON_STAMINA_MELEE];
+    if (cost < 0.0)
+    {
+        return MRES_Ignored;
+    }
+    
+    float lastChargeLength = GetWeaponLastChargeLength(weapon);
+    if (lastChargeLength > 0.0)
+    {
+        cost *= lastChargeLength;
+    }
+    
+    float currentStamina = GetPlayerStamina(owner);
+    if (cost > currentStamina)
+    {
+        cost = currentStamina;
+    }
+
+    SetPlayerStamina(owner, currentStamina - cost);
+    
+    return MRES_Supercede;
+
 }
 
 /**
@@ -1248,7 +1268,7 @@ Action Hook_PlayerWeaponSwitch(int client, int weapon)
 
 void OverrideFirstDrawActivity(int weapon)
 {
-    if (!g_cvar_weapon_configs_enabled.BoolValue)
+    if (!g_cvar_weapon_configs_enabled.BoolValue || !IsValidEntity(weapon))
     {
         return;
     } 
@@ -1803,8 +1823,7 @@ void ChangeStaminaCost(int weapon, eWeaponOption cost)
                 float previous_stamina = g_player_stamina_pre_call[player];
                 float stamina_cost = g_weapon_options[id][view_as<int>(cost)];
 
-                if (stamina_cost >= 0.0 &&
-                    current_stamina < previous_stamina)
+                if (stamina_cost >= 0.0 && current_stamina < previous_stamina)
                 {
                     float new_stamina = previous_stamina - stamina_cost;
                     SetPlayerStamina(player, new_stamina);
@@ -2317,7 +2336,7 @@ void LoadDHooks(GameData gameconf)
 void LoadDetours(GameData gameconf)
 {
     RegDetour(gameconf, "CNMRiH_MeleeBase::ShouldMeleePushback", .post = Detour_MeleePushbackPost);
-    RegDetour(gameconf, "CNMRiH_MeleeBase::DrainMeleeSwingStamina", Detour_MeleeStaminaPre, Detour_MeleeStaminaPost);
+    RegDetour(gameconf, "CNMRiH_MeleeBase::DrainMeleeSwingStamina", .pre = Detour_MeleeStaminaPre);
     RegDetour(gameconf, "CNMRiH_WeaponBase::Unload", .post = Detour_FirearmUnloadSpeedPost);
     RegDetour(gameconf, "CNMRiH_WeaponBase::AllowsSuicide", .post = Detour_CanSuicidePost);
     RegDetour(gameconf, "CNMRiH_WeaponBase::IsSkillshotModeAvailable", Detour_CanSkillshotPre);
@@ -2543,6 +2562,18 @@ int GetEntPreviousSequence(int entity)
 float GetWeaponNextShoveTime(int weapon)
 {
     return GetEntPropFloat(weapon, Prop_Send, "m_flNextBashAttack");
+}
+
+float GetWeaponLastChargeLength(int weapon)
+{
+    float length = GetEntPropFloat(weapon, Prop_Send, "m_flLastChargeLength");
+    float maxChargeLength = g_sv_max_charge_length.FloatValue;
+    if (length > maxChargeLength)
+    {
+        length = maxChargeLength;
+    }
+
+    return length;
 }
 
 /**
