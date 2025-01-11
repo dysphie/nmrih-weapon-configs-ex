@@ -1,3 +1,6 @@
+> [!WARNING]
+> This plugin is unmaintained since Torn Banner's acquisition of the game.
+
 # Weapon Configs: Ex
 A fork of [Weapon Configs](https://forums.alliedmods.net/showthread.php?p=2628691) by [Ryan](https://forums.alliedmods.net/member.php?u=283719), made to work with the latest NMRiH updates.
 
